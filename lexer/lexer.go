@@ -1,17 +1,18 @@
 package lexer
 
 import (
+	"io"
+	"text/scanner"
+	"unicode"
+
 	"github.com/akojo/monkey/token"
 )
 
 type Lexer struct {
-	input        string
-	position     int
-	readPosition int
-	ch           byte
+	scanner scanner.Scanner
 }
 
-var ops map[byte]token.Token = map[byte]token.Token{
+var ops map[rune]token.Token = map[rune]token.Token{
 	'=': {Type: token.ASSIGN, Literal: "="},
 	'!': {Type: token.BANG, Literal: "!"},
 	'+': {Type: token.PLUS, Literal: "+"},
@@ -29,93 +30,51 @@ var ops map[byte]token.Token = map[byte]token.Token{
 	0:   {Type: token.EOF, Literal: ""},
 }
 
-func New(input string) *Lexer {
-	l := &Lexer{input: input}
-	l.readChar()
+func New(input io.Reader, filename string) *Lexer {
+	l := &Lexer{}
+
+	l.scanner.Init(input)
+	l.scanner.Mode = scanner.ScanIdents | scanner.ScanInts | scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
+	l.scanner.IsIdentRune = func(ch rune, i int) bool {
+		return unicode.IsLetter(ch) || ch == '_' || (i > 0 && unicode.IsDigit(ch))
+	}
+
 	return l
 }
 
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
-	l.skipWhitespace()
+	ch := l.scanner.Scan()
 
-	if op, found := ops[l.ch]; found {
+	if ch == scanner.EOF {
+		return token.Token{Type: token.EOF, Literal: ""}
+	}
+
+	if op, found := ops[ch]; found {
 		// Special handling for "==" and "!="
-		if l.ch == '=' && l.peekChar() == '=' {
-			l.readChar()
+		if ch == '=' && l.scanner.Peek() == '=' {
+			l.scanner.Next()
 			tok = token.Token{Type: token.EQ, Literal: "=="}
-		} else if l.ch == '!' && l.peekChar() == '=' {
-			l.readChar()
+		} else if ch == '!' && l.scanner.Peek() == '=' {
+			l.scanner.Next()
 			tok = token.Token{Type: token.NE, Literal: "!="}
 		} else {
 			tok = op
 		}
 	} else {
-		if isLetter(l.ch) {
-			tok.Literal = l.readIdentifier()
+		switch ch {
+		case scanner.Ident:
+			tok.Literal = l.scanner.TokenText()
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
-		} else if isDigit(l.ch) {
+		case scanner.Int:
 			tok.Type = token.INT
-			tok.Literal = l.readNumber()
+			tok.Literal = l.scanner.TokenText()
 			return tok
-		} else {
-			tok = newToken(token.ILLEGAL, l.ch)
+		default:
+			tok = token.Token{Type: token.ILLEGAL, Literal: string(ch)}
 		}
 	}
-	l.readChar()
 	return tok
-}
-
-func (l *Lexer) skipWhitespace() {
-	for l.ch == ' ' || l.ch == '\t' || l.ch == '\n' || l.ch == '\r' {
-		l.readChar()
-	}
-}
-
-func (l *Lexer) peekChar() byte {
-	if l.readPosition >= len(l.input) {
-		return 0
-	} else {
-		return l.input[l.readPosition]
-	}
-}
-
-func (l *Lexer) readChar() {
-	if l.readPosition >= len(l.input) {
-		l.ch = 0
-	} else {
-		l.ch = l.input[l.readPosition]
-	}
-	l.position = l.readPosition
-	l.readPosition++
-}
-
-func (l *Lexer) readIdentifier() string {
-	position := l.position
-	for isLetter(l.ch) {
-		l.readChar()
-	}
-	return l.input[position:l.position]
-}
-
-func (l *Lexer) readNumber() string {
-	position := l.position
-	for isDigit(l.ch) {
-		l.readChar()
-	}
-	return l.input[position:l.position]
-}
-
-func newToken(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
-}
-
-func isLetter(ch byte) bool {
-	return 'a' <= ch && ch <= 'z' || 'A' <= ch && ch <= 'Z' || ch == '_'
-}
-
-func isDigit(ch byte) bool {
-	return '0' <= ch && ch <= '9'
 }

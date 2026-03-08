@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/akojo/monkey/token"
@@ -22,7 +23,7 @@ func TestTokenizeAssignment(t *testing.T) {
 		{token.EOF, ""},
 	}
 
-	testNextToken(t, input, expectTokens)
+	testLexer(t, input, expectTokens)
 }
 
 func TestTokenizeFunctionDefinition(t *testing.T) {
@@ -47,7 +48,7 @@ func TestTokenizeFunctionDefinition(t *testing.T) {
 		{token.EOF, ""},
 	}
 
-	testNextToken(t, input, epxectTokens)
+	testLexer(t, input, epxectTokens)
 }
 
 func TestTokenizeFunctionCall(t *testing.T) {
@@ -63,7 +64,7 @@ func TestTokenizeFunctionCall(t *testing.T) {
 		{token.EOF, ""},
 	}
 
-	testNextToken(t, input, expectTokens)
+	testLexer(t, input, expectTokens)
 }
 
 func TestTokenizeIllegal(t *testing.T) {
@@ -74,17 +75,17 @@ func TestTokenizeIllegal(t *testing.T) {
 		{token.EOF, ""},
 	}
 
-	testNextToken(t, input, expectTokens)
+	testLexer(t, input, expectTokens)
 }
 
 func TestTokenizeOperators(t *testing.T) {
-	input := `!+-/*5<>;`
+	input := `!+-*/5<>;`
 	expectTokens := []expectToken{
 		{token.BANG, "!"},
 		{token.PLUS, "+"},
 		{token.MINUS, "-"},
-		{token.SLASH, "/"},
 		{token.ASTERISK, "*"},
+		{token.SLASH, "/"},
 		{token.INT, "5"},
 		{token.LT, "<"},
 		{token.GT, ">"},
@@ -92,7 +93,7 @@ func TestTokenizeOperators(t *testing.T) {
 		{token.EOF, ""},
 	}
 
-	testNextToken(t, input, expectTokens)
+	testLexer(t, input, expectTokens)
 }
 
 func TestTokenizeEquals(t *testing.T) {
@@ -111,7 +112,7 @@ func TestTokenizeEquals(t *testing.T) {
 		{token.SEMICOLON, ";"},
 	}
 
-	testNextToken(t, input, expectTokens)
+	testLexer(t, input, expectTokens)
 }
 
 func TestTokenizeKeywords(t *testing.T) {
@@ -141,11 +142,41 @@ func TestTokenizeKeywords(t *testing.T) {
 		{token.RBRACE, "}"},
 	}
 
-	testNextToken(t, input, expectTokens)
+	testLexer(t, input, expectTokens)
 }
 
-func testNextToken(t *testing.T, input string, expectTokens []expectToken) {
-	l := New(input)
+func TestSkipComments(t *testing.T) {
+	input := `
+		a = 1; // this is a comment
+		b = /* inline comment */ 2;`
+	expectTokens := []expectToken{
+		{token.IDENT, "a"},
+		{token.ASSIGN, "="},
+		{token.INT, "1"},
+		{token.SEMICOLON, ";"},
+		{token.IDENT, "b"},
+		{token.ASSIGN, "="},
+		{token.INT, "2"},
+		{token.SEMICOLON, ";"},
+	}
+
+	testLexer(t, input, expectTokens)
+}
+
+func TestUnicodeIdentifiers(t *testing.T) {
+	input := `ö; í;`
+	expectTokens := []expectToken{
+		{token.IDENT, "ö"},
+		{token.SEMICOLON, ";"},
+		{token.IDENT, "í"},
+		{token.SEMICOLON, ";"},
+	}
+
+	testLexer(t, input, expectTokens)
+}
+
+func testLexer(t *testing.T, input string, expectTokens []expectToken) {
+	l := New(strings.NewReader(input), "<test>")
 
 	for i, expectToken := range expectTokens {
 		token := l.NextToken()
