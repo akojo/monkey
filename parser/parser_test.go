@@ -9,15 +9,10 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
-	input := `
+	program := makeProgram(t, `
 		let x = 5;
-		let y = 10;`
+		let y = 10;`)
 
-	l := lexer.New(strings.NewReader(input), "<test>")
-	p := New(l)
-
-	program := p.ParseProgram()
-	checkParserErrors(t, p)
 	if program == nil {
 		t.Fatalf("ParseProgram() returned nil")
 	}
@@ -37,6 +32,37 @@ func TestLetStatements(t *testing.T) {
 			return
 		}
 	}
+}
+
+func TestReturnStatements(t *testing.T) {
+	program := makeProgram(t, `
+		return 5;
+		return 10;`)
+
+	if len(program.Statements) != 2 {
+		t.Fatalf("expected 2 program.Statements, got %d", len(program.Statements))
+	}
+
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+		if !ok {
+			t.Errorf("stmt: expected *ast.ReturnStatement, got %T", stmt)
+			continue
+		}
+		if returnStmt.TokenLiteral() != "return" {
+			t.Errorf("returnStmt.TokenLiteral: expected \"return\", got %q", returnStmt.TokenLiteral())
+		}
+	}
+}
+
+func makeProgram(t *testing.T, input string) *ast.Program {
+	l := lexer.New(strings.NewReader(input), "<test>")
+	p := New(l)
+
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
+
+	return program
 }
 
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {

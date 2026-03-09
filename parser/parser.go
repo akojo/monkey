@@ -54,8 +54,10 @@ func (p *Parser) parseStatement() (ast.Statement, error) {
 	switch p.curToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
+	case token.RETURN:
+		return p.parseReturnStatement()
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("invalid token %q at start of statement", p.curToken.Literal)
 	}
 }
 
@@ -80,6 +82,20 @@ func (p *Parser) parseLetStatement() (*ast.LetStatement, error) {
 	}
 
 	stmt.Value = p.parseExpression()
+
+	if err := p.expectPeek(token.SEMICOLON); err != nil {
+		return nil, err
+	}
+
+	return stmt, nil
+}
+
+func (p *Parser) parseReturnStatement() (*ast.ReturnStatement, error) {
+	stmt := &ast.ReturnStatement{Token: p.curToken}
+
+	p.nextToken()
+
+	stmt.ReturnValue = p.parseExpression()
 
 	if err := p.expectPeek(token.SEMICOLON); err != nil {
 		return nil, err

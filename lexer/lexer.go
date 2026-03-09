@@ -59,6 +59,12 @@ func (l *Lexer) NextToken() token.Token {
 		return token.Token{Type: token.EOF, Literal: ""}
 	}
 
+	l.Position = Position{
+		Filename: l.scanner.Position.Filename,
+		Line:     l.scanner.Position.Line,
+		Column:   l.scanner.Position.Column,
+	}
+
 	if op, found := ops[ch]; found {
 		// Special handling for "==" and "!="
 		if ch == '=' && l.scanner.Peek() == '=' {
@@ -81,10 +87,5 @@ func (l *Lexer) NextToken() token.Token {
 		}
 	}
 
-	l.Position = Position{
-		Filename: l.scanner.Position.Filename,
-		Line:     l.scanner.Position.Line,
-		Column:   l.scanner.Position.Column,
-	}
 	return tok
 }
