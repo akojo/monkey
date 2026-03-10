@@ -16,9 +16,8 @@ func TestLetStatements(t *testing.T) {
 	if program == nil {
 		t.Fatalf("ParseProgram() returned nil")
 	}
-	if len(program.Statements) != 2 {
-		t.Fatalf("expected 2 program.Statements, got %d", len(program.Statements))
-	}
+
+	expectStatements(t, program, 2)
 
 	tests := []struct {
 		expectIdentifier string
@@ -39,9 +38,7 @@ func TestReturnStatements(t *testing.T) {
 		return 5;
 		return 10;`)
 
-	if len(program.Statements) != 2 {
-		t.Fatalf("expected 2 program.Statements, got %d", len(program.Statements))
-	}
+	expectStatements(t, program, 2)
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -52,6 +49,28 @@ func TestReturnStatements(t *testing.T) {
 		if returnStmt.TokenLiteral() != "return" {
 			t.Errorf("returnStmt.TokenLiteral: expected \"return\", got %q", returnStmt.TokenLiteral())
 		}
+	}
+}
+
+func TestIdentifierExpression(t *testing.T) {
+	program := makeProgram(t, "foobar;")
+
+	expectStatements(t, program, 1)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt: expected *ast.ExpressionStatement, got %T", stmt)
+	}
+
+	ident, ok := stmt.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("ident: expected *ast.Identifier, got %T", ident)
+	}
+	if ident.Value != "foobar" {
+		t.Errorf("ident.Value: expected \"foobar\", got %q", ident.Value)
+	}
+	if ident.TokenLiteral() != "foobar" {
+		t.Errorf("ident.TokenLiteral, expected \"foobar\", got %q", ident.TokenLiteral())
 	}
 }
 
@@ -99,4 +118,10 @@ func checkParserErrors(t *testing.T, p *Parser) {
 		t.Errorf("%s", err)
 	}
 	t.FailNow()
+}
+
+func expectStatements(t *testing.T, program *ast.Program, count int) {
+	if len(program.Statements) != count {
+		t.Fatalf("expected %d program.Statements, got %d", count, len(program.Statements))
+	}
 }
