@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/akojo/monkey/ast"
 	"github.com/akojo/monkey/lexer"
@@ -9,8 +10,8 @@ import (
 )
 
 type (
-	prefixParseFn func() ast.Expression
-	infixParseFn  func(ast.Expression) ast.Expression
+	prefixParseFn func() (ast.Expression, error)
+	infixParseFn  func(ast.Expression) (ast.Expression, error)
 )
 
 type Parser struct {
@@ -40,6 +41,7 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 
 	p.nextToken()
 	p.nextToken()
@@ -143,15 +145,27 @@ func (p *Parser) parseReturnStatement() (*ast.ReturnStatement, error) {
 func (p *Parser) parseExpression(precedence int) (ast.Expression, error) {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
-		return nil, nil
+		return nil, fmt.Errorf("unrecognized token type: %q", p.curToken.Type)
 	}
-	leftExp := prefix()
+	leftExp, err := prefix()
 
-	return leftExp, nil
+	return leftExp, err
 }
 
-func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+func (p *Parser) parseIdentifier() (ast.Expression, error) {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}, nil
+}
+
+func (p *Parser) parseIntegerLiteral() (ast.Expression, error) {
+	lit := &ast.IntegerLiteral{Token: p.curToken}
+
+	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid integer: %q", p.curToken.Literal)
+	}
+
+	lit.Value = value
+	return lit, nil
 }
 
 func (p *Parser) expectPeek(t token.TokenType) error {

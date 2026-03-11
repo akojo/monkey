@@ -19,18 +19,8 @@ func TestLetStatements(t *testing.T) {
 
 	expectStatements(t, program, 2)
 
-	tests := []struct {
-		expectIdentifier string
-	}{
-		{"x"},
-		{"y"},
-	}
-	for i, tt := range tests {
-		stmt := program.Statements[i]
-		if !testLetStatement(t, stmt, tt.expectIdentifier) {
-			return
-		}
-	}
+	testLetStatement(t, program.Statements[0], "x")
+	testLetStatement(t, program.Statements[1], "y")
 }
 
 func TestReturnStatements(t *testing.T) {
@@ -70,7 +60,29 @@ func TestIdentifierExpression(t *testing.T) {
 		t.Errorf("ident.Value: expected \"foobar\", got %q", ident.Value)
 	}
 	if ident.TokenLiteral() != "foobar" {
-		t.Errorf("ident.TokenLiteral, expected \"foobar\", got %q", ident.TokenLiteral())
+		t.Errorf("ident.TokenLiteral: expected \"foobar\", got %q", ident.TokenLiteral())
+	}
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	program := makeProgram(t, "5;")
+
+	expectStatements(t, program, 1)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt: expected *ast.ExpressionStatement, got %T", stmt)
+	}
+
+	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("ident: expected *ast.IntegerLiteral, got %T", literal)
+	}
+	if literal.Value != 5 {
+		t.Errorf("literal.Value: expected 5, got %d", literal.Value)
+	}
+	if literal.TokenLiteral() != "5" {
+		t.Errorf("literal.TokenLiteral: expected \"5\", got %q", literal.TokenLiteral())
 	}
 }
 
