@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -38,7 +39,7 @@ func TestLetStatements(t *testing.T) {
 		let x = 5;
 		let y = 10;`)
 
-	expectStatements(t, program, 2)
+	expectStatementCount(t, program, 2)
 
 	testLetStatement(t, program.Statements[0], "x")
 	testLetStatement(t, program.Statements[1], "y")
@@ -49,7 +50,7 @@ func TestReturnStatements(t *testing.T) {
 		return 5;
 		return 10;`)
 
-	expectStatements(t, program, 2)
+	expectStatementCount(t, program, 2)
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -66,7 +67,7 @@ func TestReturnStatements(t *testing.T) {
 func TestIdentifierExpression(t *testing.T) {
 	program := makeProgram(t, "foobar;")
 
-	expectStatements(t, program, 1)
+	expectStatementCount(t, program, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -88,23 +89,33 @@ func TestIdentifierExpression(t *testing.T) {
 func TestIntegerLiteralExpression(t *testing.T) {
 	program := makeProgram(t, "5;")
 
-	expectStatements(t, program, 1)
+	expectStatementCount(t, program, 1)
 
-	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
-	if !ok {
-		t.Fatalf("stmt: expected *ast.ExpressionStatement, got %T", stmt)
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	expectIntegerLiteral(t, stmt.Expression, 5)
+}
+
+func TestPrefixExpressions(t *testing.T) {
+	testPrefixExpression := func(input string, op string, value int64) {
+		program := makeProgram(t, input)
+
+		expectStatementCount(t, program, 1)
+
+		stmt := expectExpressionStatement(t, program.Statements[0])
+
+		exp, ok := stmt.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("exp: expected *ast.PrefixExpression, got %T", exp)
+		}
+		if exp.Operator != op {
+			t.Fatalf("exp.Operator: expected %q, got %q", op, exp.Operator)
+		}
+		expectIntegerLiteral(t, exp.Right, value)
 	}
 
-	literal, ok := stmt.Expression.(*ast.IntegerLiteral)
-	if !ok {
-		t.Fatalf("ident: expected *ast.IntegerLiteral, got %T", literal)
-	}
-	if literal.Value != 5 {
-		t.Errorf("literal.Value: expected 5, got %d", literal.Value)
-	}
-	if literal.TokenLiteral() != "5" {
-		t.Errorf("literal.TokenLiteral: expected \"5\", got %q", literal.TokenLiteral())
-	}
+	testPrefixExpression("!5;", "!", 5)
+	testPrefixExpression("-15;", "-", 15)
 }
 
 func makeProgram(t *testing.T, input string) *ast.Program {
@@ -132,8 +143,31 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	t.FailNow()
 }
 
-func expectStatements(t *testing.T, program *ast.Program, count int) {
+func expectStatementCount(t *testing.T, program *ast.Program, count int) {
 	if len(program.Statements) != count {
 		t.Fatalf("expected %d program.Statements, got %d", count, len(program.Statements))
 	}
+}
+
+func expectIntegerLiteral(t *testing.T, exp ast.Expression, value int64) {
+	literal, ok := exp.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("literal: expected *ast.IntegerLiteral, got %T", literal)
+	}
+	if literal.Value != value {
+		t.Errorf("literal.Value: expected %d, got %d", value, literal.Value)
+	}
+	tokenLiteral := strconv.FormatInt(value, 10)
+	if literal.TokenLiteral() != tokenLiteral {
+		t.Errorf("literal.TokenLiteral: expected %q, got %q", tokenLiteral, literal.TokenLiteral())
+	}
+
+}
+
+func expectExpressionStatement(t *testing.T, stmt ast.Statement) *ast.ExpressionStatement {
+	expressionStmt, ok := stmt.(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("stmt: expected *ast.ExpressionStatement, got %T", stmt)
+	}
+	return expressionStmt
 }
