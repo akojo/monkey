@@ -9,13 +9,34 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
+	testLetStatement := func(t *testing.T, s ast.Statement, name string) bool {
+		if s.TokenLiteral() != "let" {
+			t.Errorf("s.TokenLiteral: expected \"let\", got %q", s.TokenLiteral())
+			return false
+		}
+
+		letStmt, ok := s.(*ast.LetStatement)
+		if !ok {
+			t.Errorf("s: expected *ast.LetStatement, got %T", s)
+			return false
+		}
+
+		if letStmt.Name.Value != name {
+			t.Errorf("letStmt.Name.Value: expected %q, got %q", name, letStmt.Name.Value)
+			return false
+		}
+
+		if letStmt.Name.TokenLiteral() != name {
+			t.Errorf("letStmt.Name.TokenLiteral(): expected %q, got %q", name, letStmt.Name.TokenLiteral())
+			return false
+		}
+
+		return true
+	}
+
 	program := makeProgram(t, `
 		let x = 5;
 		let y = 10;`)
-
-	if program == nil {
-		t.Fatalf("ParseProgram() returned nil")
-	}
 
 	expectStatements(t, program, 2)
 
@@ -91,34 +112,13 @@ func makeProgram(t *testing.T, input string) *ast.Program {
 	p := New(l)
 
 	program := p.ParseProgram()
+	if program == nil {
+		t.Fatalf("ParseProgram() returned nil")
+	}
+
 	checkParserErrors(t, p)
 
 	return program
-}
-
-func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
-	if s.TokenLiteral() != "let" {
-		t.Errorf("s.TokenLiteral: expected \"let\", got %q", s.TokenLiteral())
-		return false
-	}
-
-	letStmt, ok := s.(*ast.LetStatement)
-	if !ok {
-		t.Errorf("s: expected *ast.LetStatement, got %T", s)
-		return false
-	}
-
-	if letStmt.Name.Value != name {
-		t.Errorf("letStmt.Name.Value: expected %q, got %q", name, letStmt.Name.Value)
-		return false
-	}
-
-	if letStmt.Name.TokenLiteral() != name {
-		t.Errorf("letStmt.Name.TokenLiteral(): expected %q, got %q", name, letStmt.Name.TokenLiteral())
-		return false
-	}
-
-	return true
 }
 
 func checkParserErrors(t *testing.T, p *Parser) {
