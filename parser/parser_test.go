@@ -171,6 +171,11 @@ func TestOperatorPrecedences(t *testing.T) {
 	test("false", "false")
 	test("3 > 5 == false", "((3 > 5) == false)")
 	test("3 < 5 == true", "((3 < 5) == true)")
+	test("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)")
+	test("(5 + 5) * 2", "((5 + 5) * 2)")
+	test("2 / (5 + 5)", "(2 / (5 + 5))")
+	test("-(5 + 5)", "(-(5 + 5))")
+	test("!(true == true)", "(!(true == true))")
 }
 
 func makeProgram(t *testing.T, input string) *ast.Program {
