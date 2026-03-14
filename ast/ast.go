@@ -36,8 +36,12 @@ func (p *Program) TokenLiteral() string {
 func (p *Program) String() string {
 	var out bytes.Buffer
 
-	for _, s := range p.Statements {
-		out.WriteString(s.String())
+	for i, s := range p.Statements {
+		if i == 0 {
+			out.WriteString(s.String())
+		} else {
+			out.WriteString("\n" + s.String())
+		}
 	}
 
 	return out.String()
@@ -128,5 +132,18 @@ type PrefixExpression struct {
 func (pe *PrefixExpression) expressionNode()      {}
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
 func (pe *PrefixExpression) String() string {
-	return fmt.Sprintf("(%s%s)", pe.Operator, pe.Right.String())
+	return fmt.Sprintf("(%s%s)", pe.Operator, pe.Right)
+}
+
+type InfixExpression struct {
+	Token    token.Token
+	Left     Expression
+	Operator string
+	Right    Expression
+}
+
+func (ie *InfixExpression) expressionNode()      {}
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) String() string {
+	return fmt.Sprintf("(%s %s %s)", ie.Left, ie.Operator, ie.Right)
 }

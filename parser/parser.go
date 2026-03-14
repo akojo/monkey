@@ -36,6 +36,17 @@ const (
 	CALL        // function(x)
 )
 
+var precedences = map[token.TokenType]int{
+	token.EQ:       EQUALS,
+	token.NE:       EQUALS,
+	token.LT:       LESSGREATER,
+	token.GT:       LESSGREATER,
+	token.PLUS:     SUM,
+	token.MINUS:    SUM,
+	token.SLASH:    PRODUCT,
+	token.ASTERISK: PRODUCT,
+}
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l, errors: make([]error, 0)}
 
@@ -44,6 +55,16 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.INT, p.parseIntegerLiteral)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+
+	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.EQ, p.parseInfixExpression)
+	p.registerInfix(token.NE, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MINUS, p.parseInfixExpression)
+	p.registerInfix(token.SLASH, p.parseInfixExpression)
+	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -150,6 +171,23 @@ func (p *Parser) parseExpression(precedence int) (ast.Expression, error) {
 		return nil, fmt.Errorf("unrecognized token type: %q", p.curToken.Type)
 	}
 	leftExp, err := prefix()
+	if err != nil {
+		return nil, err
+	}
+
+	for p.peekToken.Type != token.SEMICOLON && precedence < p.peekPrecedence() {
+		infix, found := p.infixParseFns[p.peekToken.Type]
+		if !found {
+			return leftExp, nil
+		}
+
+		p.nextToken()
+
+		leftExp, err = infix(leftExp)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return leftExp, err
 }
@@ -188,6 +226,26 @@ func (p *Parser) parsePrefixExpression() (ast.Expression, error) {
 	return expression, nil
 }
 
+func (p *Parser) parseInfixExpression(left ast.Expression) (ast.Expression, error) {
+	var err error
+
+	expression := &ast.InfixExpression{
+		Token:    p.curToken,
+		Left:     left,
+		Operator: p.curToken.Literal,
+	}
+
+	precedence := p.curPrecedence()
+	p.nextToken()
+
+	expression.Right, err = p.parseExpression(precedence)
+
+	if err != nil {
+		return nil, err
+	}
+	return expression, nil
+}
+
 func (p *Parser) expectPeek(t token.TokenType) error {
 	if p.peekToken.Type != t {
 		return fmt.Errorf("expected %q, got %q", t, p.peekToken.Literal)
@@ -202,4 +260,18 @@ func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
 
 func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+	return LOWEST
+}
+
+func (p *Parser) curPrecedence() int {
+	if p, ok := precedences[p.curToken.Type]; ok {
+		return p
+	}
+	return LOWEST
 }
