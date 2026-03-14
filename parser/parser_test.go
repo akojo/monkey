@@ -10,29 +10,19 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
-	test := func(t *testing.T, s ast.Statement, name string) bool {
+	test := func(t *testing.T, s ast.Statement, name string) {
 		if s.TokenLiteral() != "let" {
 			t.Errorf("s.TokenLiteral: expected \"let\", got %q", s.TokenLiteral())
-			return false
+			return
 		}
 
 		letStmt, ok := s.(*ast.LetStatement)
 		if !ok {
 			t.Errorf("s: expected *ast.LetStatement, got %T", s)
-			return false
+			return
 		}
 
-		if letStmt.Name.Value != name {
-			t.Errorf("letStmt.Name.Value: expected %q, got %q", name, letStmt.Name.Value)
-			return false
-		}
-
-		if letStmt.Name.TokenLiteral() != name {
-			t.Errorf("letStmt.Name.TokenLiteral(): expected %q, got %q", name, letStmt.Name.TokenLiteral())
-			return false
-		}
-
-		return true
+		expectIdentifier(t, letStmt.Name, name)
 	}
 
 	program := makeProgram(t, `
@@ -74,16 +64,7 @@ func TestIdentifierExpression(t *testing.T) {
 		t.Fatalf("stmt: expected *ast.ExpressionStatement, got %T", stmt)
 	}
 
-	ident, ok := stmt.Expression.(*ast.Identifier)
-	if !ok {
-		t.Fatalf("ident: expected *ast.Identifier, got %T", ident)
-	}
-	if ident.Value != "foobar" {
-		t.Errorf("ident.Value: expected \"foobar\", got %q", ident.Value)
-	}
-	if ident.TokenLiteral() != "foobar" {
-		t.Errorf("ident.TokenLiteral: expected \"foobar\", got %q", ident.TokenLiteral())
-	}
+	expectIdentifier(t, stmt.Expression, "foobar")
 }
 
 func TestIntegerLiteralExpression(t *testing.T) {
@@ -131,13 +112,13 @@ func TestInfixExpressions(t *testing.T) {
 			t.Fatalf("exp, expected *ast.InfixExpression, got %T", exp)
 		}
 
-		expectIntegerLiteral(t, exp.Left, leftVal)
+		expectLiteralExpression(t, exp.Left, leftVal)
 
 		if exp.Operator != op {
 			t.Fatalf("exp.Operator: expected %q, got %q", op, exp.Operator)
 		}
 
-		expectIntegerLiteral(t, exp.Right, rightVal)
+		expectLiteralExpression(t, exp.Right, rightVal)
 	}
 
 	test("5 + 5;", 5, "+", 5)
@@ -202,6 +183,32 @@ func checkParserErrors(t *testing.T, p *Parser) {
 func expectStatementCount(t *testing.T, program *ast.Program, count int) {
 	if len(program.Statements) != count {
 		t.Fatalf("%q: expected %d program.Statements, got %d", program.String(), count, len(program.Statements))
+	}
+}
+
+func expectLiteralExpression(t *testing.T, exp ast.Expression, expected any) {
+	switch v := expected.(type) {
+	case int:
+		expectIntegerLiteral(t, exp, int64(v))
+	case int64:
+		expectIntegerLiteral(t, exp, v)
+	case string:
+		expectIdentifier(t, exp, v)
+	default:
+		t.Errorf("exp: invalid type, got %T", v)
+	}
+}
+
+func expectIdentifier(t *testing.T, exp ast.Expression, value string) {
+	ident, ok := exp.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("ident: expected *ast.Identifier, got %T", ident)
+	}
+	if ident.Value != value {
+		t.Errorf("ident.Value: expected %q, got %q", value, ident.Value)
+	}
+	if ident.TokenLiteral() != value {
+		t.Errorf("ident.TokenLiteral: expected %q, got %q", value, ident.TokenLiteral())
 	}
 }
 
