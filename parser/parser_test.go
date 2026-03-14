@@ -77,8 +77,18 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	expectIntegerLiteral(t, stmt.Expression, 5)
 }
 
+func TestBooleanExpression(t *testing.T) {
+	program := makeProgram(t, "true;")
+
+	expectStatementCount(t, program, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	expectLiteralExpression(t, stmt.Expression, true)
+}
+
 func TestPrefixExpressions(t *testing.T) {
-	test := func(input string, op string, value int64) {
+	test := func(input string, op string, value any) {
 		program := makeProgram(t, input)
 
 		expectStatementCount(t, program, 1)
@@ -92,15 +102,17 @@ func TestPrefixExpressions(t *testing.T) {
 		if exp.Operator != op {
 			t.Fatalf("exp.Operator: expected %q, got %q", op, exp.Operator)
 		}
-		expectIntegerLiteral(t, exp.Right, value)
+		expectLiteralExpression(t, exp.Right, value)
 	}
 
 	test("!5;", "!", 5)
 	test("-15;", "-", 15)
+	test("!true;", "!", true)
+	test("!false;", "!", false)
 }
 
 func TestInfixExpressions(t *testing.T) {
-	test := func(input string, leftVal int64, op string, rightVal int64) {
+	test := func(input string, leftVal any, op string, rightVal any) {
 		program := makeProgram(t, input)
 
 		expectStatementCount(t, program, 1)
@@ -129,6 +141,8 @@ func TestInfixExpressions(t *testing.T) {
 	test("5 > 5;", 5, ">", 5)
 	test("5 == 5;", 5, "==", 5)
 	test("5 != 5;", 5, "!=", 5)
+	test("true == true", true, "==", true)
+	test("false != false", false, "!=", false)
 }
 
 func TestOperatorPrecedences(t *testing.T) {
@@ -153,6 +167,10 @@ func TestOperatorPrecedences(t *testing.T) {
 	test("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))")
 	test("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))")
 	test("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))")
+	test("true", "true")
+	test("false", "false")
+	test("3 > 5 == false", "((3 > 5) == false)")
+	test("3 < 5 == true", "((3 < 5) == true)")
 }
 
 func makeProgram(t *testing.T, input string) *ast.Program {
@@ -194,6 +212,8 @@ func expectLiteralExpression(t *testing.T, exp ast.Expression, expected any) {
 		expectIntegerLiteral(t, exp, v)
 	case string:
 		expectIdentifier(t, exp, v)
+	case bool:
+		expectBoolean(t, exp, v)
 	default:
 		t.Errorf("exp: invalid type, got %T", v)
 	}
@@ -223,6 +243,20 @@ func expectIntegerLiteral(t *testing.T, exp ast.Expression, value int64) {
 	tokenLiteral := strconv.FormatInt(value, 10)
 	if literal.TokenLiteral() != tokenLiteral {
 		t.Errorf("literal.TokenLiteral: expected %q, got %q", tokenLiteral, literal.TokenLiteral())
+	}
+}
+
+func expectBoolean(t *testing.T, exp ast.Expression, value bool) {
+	boolean, ok := exp.(*ast.Boolean)
+	if !ok {
+		t.Fatalf("boolean: expected *ast.Boolean, got %T", boolean)
+	}
+	if boolean.Value != value {
+		t.Errorf("boolean.Value: expected %t, got %t", value, boolean.Value)
+	}
+	tokenLiteral := strconv.FormatBool(value)
+	if boolean.TokenLiteral() != tokenLiteral {
+		t.Errorf("boolean.TokenLiteral: expected %q, got %q", tokenLiteral, boolean.TokenLiteral())
 	}
 
 }
