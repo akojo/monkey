@@ -29,7 +29,7 @@ func TestLetStatements(t *testing.T) {
 		let x = 5;
 		let y = 10;`)
 
-	expectStatementCount(t, program, 2)
+	expectStatementCount(t, program.Statements, 2)
 
 	test(t, program.Statements[0], "x")
 	test(t, program.Statements[1], "y")
@@ -40,7 +40,7 @@ func TestReturnStatements(t *testing.T) {
 		return 5;
 		return 10;`)
 
-	expectStatementCount(t, program, 2)
+	expectStatementCount(t, program.Statements, 2)
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -57,7 +57,7 @@ func TestReturnStatements(t *testing.T) {
 func TestIdentifierExpression(t *testing.T) {
 	program := makeProgram(t, "foobar;")
 
-	expectStatementCount(t, program, 1)
+	expectStatementCount(t, program.Statements, 1)
 
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
@@ -70,7 +70,7 @@ func TestIdentifierExpression(t *testing.T) {
 func TestIntegerLiteralExpression(t *testing.T) {
 	program := makeProgram(t, "5;")
 
-	expectStatementCount(t, program, 1)
+	expectStatementCount(t, program.Statements, 1)
 
 	stmt := expectExpressionStatement(t, program.Statements[0])
 
@@ -80,7 +80,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 func TestBooleanExpression(t *testing.T) {
 	program := makeProgram(t, "true;")
 
-	expectStatementCount(t, program, 1)
+	expectStatementCount(t, program.Statements, 1)
 
 	stmt := expectExpressionStatement(t, program.Statements[0])
 
@@ -91,7 +91,7 @@ func TestPrefixExpressions(t *testing.T) {
 	test := func(input string, op string, value any) {
 		program := makeProgram(t, input)
 
-		expectStatementCount(t, program, 1)
+		expectStatementCount(t, program.Statements, 1)
 
 		stmt := expectExpressionStatement(t, program.Statements[0])
 
@@ -115,7 +115,7 @@ func TestInfixExpressions(t *testing.T) {
 	test := func(input string, leftVal any, op string, rightVal any) {
 		program := makeProgram(t, input)
 
-		expectStatementCount(t, program, 1)
+		expectStatementCount(t, program.Statements, 1)
 
 		stmt := expectExpressionStatement(t, program.Statements[0])
 
@@ -178,6 +178,52 @@ func TestOperatorPrecedences(t *testing.T) {
 	test("!(true == true)", "(!(true == true))")
 }
 
+func TestIFExpression(t *testing.T) {
+	program := makeProgram(t, "if (x < y) { x }")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	exp, ok := stmt.Expression.(*ast.IFExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression: expected *ast.IFExpression, got %T", exp)
+	}
+
+	expectInfixExpression(t, exp.Condition, "x", "<", "y")
+
+	expectStatementCount(t, exp.Consequence.Statements, 1)
+	consequence := expectExpressionStatement(t, exp.Consequence.Statements[0])
+	expectIdentifier(t, consequence.Expression, "x")
+
+	if exp.Alternative != nil {
+		t.Errorf("exp.Alternative: expected nil, got %+v", exp.Alternative)
+	}
+}
+
+func TestIFElseExpression(t *testing.T) {
+	program := makeProgram(t, "if (x < y) { x } else { y }")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	exp, ok := stmt.Expression.(*ast.IFExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression: expected *ast.IFExpression, got %T", exp)
+	}
+
+	expectInfixExpression(t, exp.Condition, "x", "<", "y")
+
+	expectStatementCount(t, exp.Consequence.Statements, 1)
+	consequence := expectExpressionStatement(t, exp.Consequence.Statements[0])
+	expectIdentifier(t, consequence.Expression, "x")
+
+	expectStatementCount(t, exp.Alternative.Statements, 1)
+	alternative := expectExpressionStatement(t, exp.Alternative.Statements[0])
+	expectIdentifier(t, alternative.Expression, "y")
+}
+
 func makeProgram(t *testing.T, input string) *ast.Program {
 	l := lexer.New(strings.NewReader(input), "<test>")
 	p := New(l)
@@ -203,9 +249,9 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	t.FailNow()
 }
 
-func expectStatementCount(t *testing.T, program *ast.Program, count int) {
-	if len(program.Statements) != count {
-		t.Fatalf("%q: expected %d program.Statements, got %d", program.String(), count, len(program.Statements))
+func expectStatementCount(t *testing.T, stmts []ast.Statement, count int) {
+	if len(stmts) != count {
+		t.Fatalf("expected %d statements, got %d", count, len(stmts))
 	}
 }
 
@@ -264,6 +310,21 @@ func expectBoolean(t *testing.T, exp ast.Expression, value bool) {
 		t.Errorf("boolean.TokenLiteral: expected %q, got %q", tokenLiteral, boolean.TokenLiteral())
 	}
 
+}
+
+func expectInfixExpression(t *testing.T, exp ast.Expression, left any, op string, right any) {
+	infix, ok := exp.(*ast.InfixExpression)
+	if !ok {
+		t.Fatalf("exp: expected *ast.InfixExpression, got %T", exp)
+	}
+
+	expectLiteralExpression(t, infix.Left, left)
+
+	if infix.Operator != op {
+		t.Errorf("infix.Operator: expected %q, got %q", op, infix.Operator)
+	}
+
+	expectLiteralExpression(t, infix.Right, right)
 }
 
 func expectExpressionStatement(t *testing.T, stmt ast.Statement) *ast.ExpressionStatement {

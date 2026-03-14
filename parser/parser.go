@@ -58,6 +58,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FALSE, p.parseBoolean)
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefix(token.IF, p.parseIfExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
@@ -168,6 +169,24 @@ func (p *Parser) parseReturnStatement() (*ast.ReturnStatement, error) {
 	return stmt, nil
 }
 
+func (p *Parser) parseBlockStatement() (*ast.BlockStatement, error) {
+	block := &ast.BlockStatement{Token: p.curToken}
+	block.Statements = make([]ast.Statement, 0)
+
+	p.nextToken()
+
+	for p.curToken.Type != token.RBRACE && p.curToken.Type != token.EOF {
+		stmt, err := p.parseStatement()
+		if err != nil {
+			return nil, err
+		}
+		block.Statements = append(block.Statements, stmt)
+		p.nextToken()
+	}
+
+	return block, nil
+}
+
 func (p *Parser) parseExpression(precedence int) (ast.Expression, error) {
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
@@ -241,6 +260,51 @@ func (p *Parser) parsePrefixExpression() (ast.Expression, error) {
 	p.nextToken()
 
 	expression.Right, err = p.parseExpression(PREFIX)
+	if err != nil {
+		return nil, err
+	}
+
+	return expression, nil
+}
+
+func (p *Parser) parseIfExpression() (ast.Expression, error) {
+	var err error
+	expression := &ast.IFExpression{Token: p.curToken}
+
+	if err := p.expectPeek(token.LPAREN); err != nil {
+		return nil, err
+	}
+
+	p.nextToken()
+	expression.Condition, err = p.parseExpression(LOWEST)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := p.expectPeek(token.RPAREN); err != nil {
+		return nil, err
+	}
+
+	if err := p.expectPeek(token.LBRACE); err != nil {
+		return nil, err
+	}
+
+	expression.Consequence, err = p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.peekToken.Type != token.ELSE {
+		return expression, nil
+	}
+
+	p.nextToken()
+
+	if err := p.expectPeek(token.LBRACE); err != nil {
+		return nil, err
+	}
+
+	expression.Alternative, err = p.parseBlockStatement()
 	if err != nil {
 		return nil, err
 	}

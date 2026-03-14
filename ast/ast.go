@@ -156,3 +156,40 @@ func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
 func (ie *InfixExpression) String() string {
 	return fmt.Sprintf("(%s %s %s)", ie.Left, ie.Operator, ie.Right)
 }
+
+type IFExpression struct {
+	Token       token.Token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IFExpression) expressionNode()      {}
+func (ie *IFExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IFExpression) String() string {
+	if ie.Alternative == nil {
+		return fmt.Sprintf("if %s %s", ie.Condition, ie.Consequence)
+	}
+	return fmt.Sprintf("if %s %s else %s", ie.Condition, ie.Consequence, ie.Alternative)
+}
+
+type BlockStatement struct {
+	Token      token.Token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for i, s := range bs.Statements {
+		if i == 0 {
+			out.WriteString(s.String())
+		} else {
+			out.WriteString("\n" + s.String())
+		}
+	}
+
+	return out.String()
+}
