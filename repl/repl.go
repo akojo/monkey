@@ -32,7 +32,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		fmt.Fprintf(out, "%s\n", program.String())
+		fmt.Fprintf(out, "%s", program.String())
 	}
 }
 

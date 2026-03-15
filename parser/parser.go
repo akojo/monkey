@@ -152,8 +152,8 @@ func (p *Parser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, fmt.Errorf("let: %w", err)
 	}
 
-	if err = p.expectPeek(token.SEMICOLON); err != nil {
-		return nil, fmt.Errorf("let: %w", err)
+	if p.peekToken.Type == token.SEMICOLON {
+		p.nextToken()
 	}
 
 	return stmt, nil

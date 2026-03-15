@@ -17,7 +17,7 @@ func TestString(t *testing.T) {
 		},
 	}
 
-	expected := "let var = value;"
+	expected := "let var = value;\n"
 	got := program.String()
 
 	if got != expected {
