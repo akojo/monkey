@@ -136,37 +136,42 @@ func (p *Parser) parseLetStatement() (*ast.LetStatement, error) {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
 	if err = p.expectPeek(token.IDENT); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("let: %w", err)
 	}
 
 	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 
 	if err = p.expectPeek(token.ASSIGN); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("let: %w", err)
 	}
 
-	for p.peekToken.Type != token.SEMICOLON && p.peekToken.Type != token.EOF {
-		p.nextToken()
+	p.nextToken()
+
+	stmt.Value, err = p.parseExpression(LOWEST)
+	if err != nil {
+		return nil, fmt.Errorf("let: %w", err)
 	}
 
 	if err = p.expectPeek(token.SEMICOLON); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("let: %w", err)
 	}
 
 	return stmt, nil
 }
 
 func (p *Parser) parseReturnStatement() (*ast.ReturnStatement, error) {
+	var err error
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 
 	p.nextToken()
 
-	for p.peekToken.Type != token.SEMICOLON && p.peekToken.Type != token.EOF {
-		p.nextToken()
+	stmt.ReturnValue, err = p.parseExpression(LOWEST)
+	if err != nil {
+		return nil, fmt.Errorf("return: %w", err)
 	}
 
 	if err := p.expectPeek(token.SEMICOLON); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("return: %w", err)
 	}
 
 	return stmt, nil

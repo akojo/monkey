@@ -10,48 +10,59 @@ import (
 )
 
 func TestLetStatements(t *testing.T) {
-	test := func(t *testing.T, s ast.Statement, name string) {
-		if s.TokenLiteral() != "let" {
-			t.Errorf("s.TokenLiteral: expected \"let\", got %q", s.TokenLiteral())
-			return
-		}
+	test := func(input string, ident string, value any) {
+		t.Run(input, func(t *testing.T) {
+			program := makeProgram(t, input)
 
-		letStmt, ok := s.(*ast.LetStatement)
-		if !ok {
-			t.Errorf("s: expected *ast.LetStatement, got %T", s)
-			return
-		}
+			expectStatementCount(t, program.Statements, 1)
 
-		expectIdentifier(t, letStmt.Name, name)
+			stmt := program.Statements[0]
+
+			if stmt.TokenLiteral() != "let" {
+				t.Errorf("s.TokenLiteral: expected \"let\", got %q", stmt.TokenLiteral())
+				return
+			}
+
+			letStmt, ok := stmt.(*ast.LetStatement)
+			if !ok {
+				t.Errorf("s: expected *ast.LetStatement, got %T", stmt)
+				return
+			}
+
+			expectIdentifier(t, letStmt.Name, ident)
+			expectLiteralExpression(t, letStmt.Value, value)
+		})
 	}
 
-	program := makeProgram(t, `
-		let x = 5;
-		let y = 10;`)
-
-	expectStatementCount(t, program.Statements, 2)
-
-	test(t, program.Statements[0], "x")
-	test(t, program.Statements[1], "y")
+	test("let x = 5;", "x", 5)
+	test("let y = true;", "y", true)
+	test("let foobar = y;", "foobar", "y")
 }
 
 func TestReturnStatements(t *testing.T) {
-	program := makeProgram(t, `
-		return 5;
-		return 10;`)
+	test := func(input string, value any) {
+		t.Run(input, func(t *testing.T) {
+			program := makeProgram(t, input)
 
-	expectStatementCount(t, program.Statements, 2)
+			expectStatementCount(t, program.Statements, 1)
 
-	for _, stmt := range program.Statements {
-		returnStmt, ok := stmt.(*ast.ReturnStatement)
-		if !ok {
-			t.Errorf("stmt: expected *ast.ReturnStatement, got %T", stmt)
-			continue
-		}
-		if returnStmt.TokenLiteral() != "return" {
-			t.Errorf("returnStmt.TokenLiteral: expected \"return\", got %q", returnStmt.TokenLiteral())
-		}
+			stmt := program.Statements[0]
+
+			returnStmt, ok := stmt.(*ast.ReturnStatement)
+			if !ok {
+				t.Errorf("stmt: expected *ast.ReturnStatement, got %T", stmt)
+			}
+			if returnStmt.TokenLiteral() != "return" {
+				t.Errorf("returnStmt.TokenLiteral: expected \"return\", got %q", returnStmt.TokenLiteral())
+			}
+
+			expectLiteralExpression(t, returnStmt.ReturnValue, value)
+		})
 	}
+
+	test("return 5;", 5)
+	test("return true;", true)
+	test("return x;", "x")
 }
 
 func TestIdentifierExpression(t *testing.T) {
@@ -332,16 +343,16 @@ func expectIdentifier(t *testing.T, exp ast.Expression, value string) {
 }
 
 func expectIntegerLiteral(t *testing.T, exp ast.Expression, value int64) {
-	literal, ok := exp.(*ast.IntegerLiteral)
+	intLiteral, ok := exp.(*ast.IntegerLiteral)
 	if !ok {
-		t.Fatalf("literal: expected *ast.IntegerLiteral, got %T", literal)
+		t.Fatalf("int: expected *ast.IntegerLiteral, got %T", exp)
 	}
-	if literal.Value != value {
-		t.Errorf("literal.Value: expected %d, got %d", value, literal.Value)
+	if intLiteral.Value != value {
+		t.Errorf("int.Value: expected %d, got %d", value, intLiteral.Value)
 	}
 	tokenLiteral := strconv.FormatInt(value, 10)
-	if literal.TokenLiteral() != tokenLiteral {
-		t.Errorf("literal.TokenLiteral: expected %q, got %q", tokenLiteral, literal.TokenLiteral())
+	if intLiteral.TokenLiteral() != tokenLiteral {
+		t.Errorf("int.TokenLiteral: expected %q, got %q", tokenLiteral, intLiteral.TokenLiteral())
 	}
 }
 
