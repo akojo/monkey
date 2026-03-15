@@ -176,6 +176,9 @@ func TestOperatorPrecedences(t *testing.T) {
 	test("2 / (5 + 5)", "(2 / (5 + 5))")
 	test("-(5 + 5)", "(-(5 + 5))")
 	test("!(true == true)", "(!(true == true))")
+	test("a + add(b * c) + d", "((a + add((b * c))) + d)")
+	test("add(a, 1, 2 * 3, add(6, 7 *8))", "add(a, 1, (2 * 3), add(6, (7 * 8)))")
+	test("add(a + b * c + d)", "add(((a + (b * c)) + d))")
 }
 
 func TestIFExpression(t *testing.T) {
@@ -245,6 +248,28 @@ func TestFunctionLiteral(t *testing.T) {
 	expectStatementCount(t, function.Body.Statements, 1)
 	bodyStmt := expectExpressionStatement(t, function.Body.Statements[0])
 	expectInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
+func TestCallExpression(t *testing.T) {
+	program := makeProgram(t, "add(1, 2 * 3);")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	exp, ok := stmt.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("stmt.Expression: expected *ast.CallExpression, got %T", stmt.Expression)
+	}
+
+	expectIdentifier(t, exp.Function, "add")
+
+	if len(exp.Arguments) != 2 {
+		t.Fatalf("exp.Arguments: expected 2, got %d", len(exp.Arguments))
+	}
+
+	expectLiteralExpression(t, exp.Arguments[0], 1)
+	expectInfixExpression(t, exp.Arguments[1], 2, "*", 3)
 }
 
 func makeProgram(t *testing.T, input string) *ast.Program {

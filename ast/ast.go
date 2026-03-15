@@ -204,3 +204,20 @@ func (fl *FunctionLiteral) String() string {
 	}
 	return fmt.Sprintf("%s (%s) %s", fl.TokenLiteral(), strings.Join(params, ", "), fl.Body.String())
 }
+
+type CallExpression struct {
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
+func (ce *CallExpression) expressionNode()      {}
+func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+func (ce *CallExpression) String() string {
+	args := make([]string, 0)
+	for _, arg := range ce.Arguments {
+		args = append(args, arg.String())
+	}
+
+	return fmt.Sprintf("%s(%s)", ce.Function.String(), strings.Join(args, ", "))
+}

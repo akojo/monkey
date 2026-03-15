@@ -45,6 +45,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.SLASH:    PRODUCT,
 	token.ASTERISK: PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -70,6 +71,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
 	p.registerInfix(token.SLASH, p.parseInfixExpression)
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -389,6 +391,51 @@ func (p *Parser) parseInfixExpression(left ast.Expression) (ast.Expression, erro
 		return nil, err
 	}
 	return expression, nil
+}
+
+func (p *Parser) parseCallExpression(function ast.Expression) (ast.Expression, error) {
+	var err error
+	exp := &ast.CallExpression{Token: p.curToken, Function: function}
+
+	exp.Arguments, err = p.parseCallArguments()
+	if err != nil {
+		return nil, fmt.Errorf("call: %w", err)
+	}
+
+	return exp, nil
+}
+
+func (p *Parser) parseCallArguments() ([]ast.Expression, error) {
+	args := make([]ast.Expression, 0)
+
+	if p.peekToken.Type == token.RPAREN {
+		p.nextToken()
+		return args, nil
+	}
+
+	p.nextToken()
+	exp, err := p.parseExpression(LOWEST)
+	if err != nil {
+		return nil, fmt.Errorf("args: %w", err)
+	}
+	args = append(args, exp)
+
+	for p.peekToken.Type == token.COMMA {
+		p.nextToken()
+		p.nextToken()
+
+		exp, err := p.parseExpression(LOWEST)
+		if err != nil {
+			return nil, fmt.Errorf("args: %w", err)
+		}
+		args = append(args, exp)
+	}
+
+	if err := p.expectPeek(token.RPAREN); err != nil {
+		return nil, fmt.Errorf("args: %w", err)
+	}
+
+	return args, nil
 }
 
 func (p *Parser) expectPeek(t token.TokenType) error {
