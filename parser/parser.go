@@ -94,8 +94,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	for p.curToken.Type != token.EOF {
 		stmt, err := p.parseStatement()
 		if err != nil {
-			pos := p.l.Position
-			p.errors = append(p.errors, fmt.Errorf("%s:%d:%d: %w", pos.Filename, pos.Line, pos.Column, err))
+			p.errors = append(p.errors, fmt.Errorf("%s:%d:%d: %w", p.l.Filename, p.curToken.Line, p.curToken.Column, err))
 		} else {
 			program.Statements = append(program.Statements, stmt)
 		}

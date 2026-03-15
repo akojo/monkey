@@ -8,14 +8,8 @@ import (
 	"github.com/akojo/monkey/token"
 )
 
-type Position struct {
-	Filename string
-	Line     int
-	Column   int
-}
-
 type Lexer struct {
-	Position Position
+	Filename string
 	scanner  scanner.Scanner
 }
 
@@ -38,7 +32,7 @@ var ops map[rune]token.Token = map[rune]token.Token{
 }
 
 func New(input io.Reader, filename string) *Lexer {
-	l := &Lexer{}
+	l := &Lexer{Filename: filename}
 
 	l.scanner.Init(input)
 	l.scanner.Filename = filename
@@ -59,11 +53,8 @@ func (l *Lexer) NextToken() token.Token {
 		return token.Token{Type: token.EOF, Literal: ""}
 	}
 
-	l.Position = Position{
-		Filename: l.scanner.Position.Filename,
-		Line:     l.scanner.Position.Line,
-		Column:   l.scanner.Position.Column,
-	}
+	line := l.scanner.Position.Line
+	column := l.scanner.Position.Column
 
 	if op, found := ops[ch]; found {
 		// Special handling for "==" and "!="
@@ -86,6 +77,9 @@ func (l *Lexer) NextToken() token.Token {
 			tok = token.Token{Type: token.ILLEGAL, Literal: string(ch)}
 		}
 	}
+
+	tok.Line = line
+	tok.Column = column
 
 	return tok
 }
