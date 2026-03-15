@@ -184,9 +184,9 @@ func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
 func (bs *BlockStatement) String() string {
 	statements := make([]string, 0)
 	for _, s := range bs.Statements {
-		statements = append(statements, s.String()+"\n")
+		statements = append(statements, s.String())
 	}
-	return fmt.Sprintf("{\n%s}\n", statements)
+	return fmt.Sprintf("{\n%s\n}\n", strings.Join(statements, "\n"))
 }
 
 type FunctionLiteral struct {
