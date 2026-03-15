@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/akojo/monkey/lexer"
-	"github.com/akojo/monkey/token"
+	"github.com/akojo/monkey/parser"
 )
 
 const PROMPT = ">> "
@@ -24,9 +24,20 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		l := lexer.New(strings.NewReader(line), "<stdin>")
+		p := parser.New(l)
 
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParseErrors(out, p.Errors())
+			continue
 		}
+
+		fmt.Fprintf(out, "%s", program.String())
+	}
+}
+
+func printParseErrors(out io.Writer, errors []error) {
+	for _, err := range errors {
+		fmt.Fprintf(out, "\t%s\n", err)
 	}
 }

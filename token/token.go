@@ -1,10 +1,14 @@
 package token
 
+import "fmt"
+
 type TokenType string
 
 type Token struct {
 	Type    TokenType
 	Literal string
+	Line    int
+	Column  int
 }
 
 const (
@@ -57,9 +61,16 @@ var keywords = map[string]TokenType{
 	"return": RETURN,
 }
 
-func LookupIdent(ident string) TokenType {
-	if tok, ok := keywords[ident]; ok {
-		return tok
+func (t Token) String() string {
+	if t.Type == IDENT || t.Type == INT {
+		return fmt.Sprintf("%s(%s)", t.Type, t.Literal)
 	}
-	return IDENT
+	return string(t.Type)
+}
+
+func NewIdent(ident string) Token {
+	if tok, ok := keywords[ident]; ok {
+		return Token{Type: tok, Literal: ident}
+	}
+	return Token{Type: IDENT, Literal: ident}
 }

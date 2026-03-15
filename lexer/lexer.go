@@ -9,7 +9,8 @@ import (
 )
 
 type Lexer struct {
-	scanner scanner.Scanner
+	Filename string
+	scanner  scanner.Scanner
 }
 
 var ops map[rune]token.Token = map[rune]token.Token{
@@ -31,9 +32,10 @@ var ops map[rune]token.Token = map[rune]token.Token{
 }
 
 func New(input io.Reader, filename string) *Lexer {
-	l := &Lexer{}
+	l := &Lexer{Filename: filename}
 
 	l.scanner.Init(input)
+	l.scanner.Filename = filename
 	l.scanner.Mode = scanner.ScanIdents | scanner.ScanInts | scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
 	l.scanner.IsIdentRune = func(ch rune, i int) bool {
 		return unicode.IsLetter(ch) || ch == '_' || (i > 0 && unicode.IsDigit(ch))
@@ -51,6 +53,9 @@ func (l *Lexer) NextToken() token.Token {
 		return token.Token{Type: token.EOF, Literal: ""}
 	}
 
+	line := l.scanner.Position.Line
+	column := l.scanner.Position.Column
+
 	if op, found := ops[ch]; found {
 		// Special handling for "==" and "!="
 		if ch == '=' && l.scanner.Peek() == '=' {
@@ -65,16 +70,16 @@ func (l *Lexer) NextToken() token.Token {
 	} else {
 		switch ch {
 		case scanner.Ident:
-			tok.Literal = l.scanner.TokenText()
-			tok.Type = token.LookupIdent(tok.Literal)
-			return tok
+			tok = token.NewIdent(l.scanner.TokenText())
 		case scanner.Int:
-			tok.Type = token.INT
-			tok.Literal = l.scanner.TokenText()
-			return tok
+			tok = token.Token{Type: token.INT, Literal: l.scanner.TokenText()}
 		default:
 			tok = token.Token{Type: token.ILLEGAL, Literal: string(ch)}
 		}
 	}
+
+	tok.Line = line
+	tok.Column = column
+
 	return tok
 }
