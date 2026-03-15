@@ -59,6 +59,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpression)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
+	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
@@ -310,6 +311,64 @@ func (p *Parser) parseIfExpression() (ast.Expression, error) {
 	}
 
 	return expression, nil
+}
+
+func (p *Parser) parseFunctionLiteral() (ast.Expression, error) {
+	var err error
+	lit := &ast.FunctionLiteral{Token: p.curToken}
+
+	if err := p.expectPeek(token.LPAREN); err != nil {
+		return nil, fmt.Errorf("function: %w", err)
+	}
+
+	lit.Parameters, err = p.parseFunctionParameters()
+	if err != nil {
+		return nil, fmt.Errorf("function: %w", err)
+	}
+
+	if err := p.expectPeek(token.LBRACE); err != nil {
+		return nil, fmt.Errorf("function: %w", err)
+	}
+
+	lit.Body, err = p.parseBlockStatement()
+	if err != nil {
+		return nil, fmt.Errorf("function body: %w", err)
+	}
+
+	return lit, nil
+}
+
+func (p *Parser) parseFunctionParameters() ([]*ast.Identifier, error) {
+	identifiers := make([]*ast.Identifier, 0)
+	makeIdentifier := func() *ast.Identifier { return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal} }
+
+	if p.peekToken.Type == token.RPAREN {
+		p.nextToken()
+		return identifiers, nil
+	}
+
+	p.nextToken()
+
+	if p.curToken.Type != token.IDENT {
+		return nil, fmt.Errorf("parameters: expected %s, got %s", token.IDENT, p.curToken)
+	}
+	identifiers = append(identifiers, makeIdentifier())
+
+	for p.peekToken.Type == token.COMMA {
+		p.nextToken()
+		p.nextToken()
+
+		if p.curToken.Type != token.IDENT {
+			return nil, fmt.Errorf("parameters: expected %s, got %s", token.IDENT, p.curToken)
+		}
+		identifiers = append(identifiers, makeIdentifier())
+	}
+
+	if err := p.expectPeek(token.RPAREN); err != nil {
+		return nil, fmt.Errorf("parameters: %w", err)
+	}
+
+	return identifiers, nil
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) (ast.Expression, error) {

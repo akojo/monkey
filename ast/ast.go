@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/akojo/monkey/token"
 )
@@ -181,15 +182,25 @@ type BlockStatement struct {
 func (bs *BlockStatement) statementNode()       {}
 func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
 func (bs *BlockStatement) String() string {
-	var out bytes.Buffer
-
-	for i, s := range bs.Statements {
-		if i == 0 {
-			out.WriteString(s.String())
-		} else {
-			out.WriteString("\n" + s.String())
-		}
+	statements := make([]string, 0)
+	for _, s := range bs.Statements {
+		statements = append(statements, s.String()+"\n")
 	}
+	return fmt.Sprintf("{\n%s}\n", statements)
+}
 
-	return out.String()
+type FunctionLiteral struct {
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode()      {}
+func (fl *FunctionLiteral) TokenLiteral() string { return fl.Token.Literal }
+func (fl *FunctionLiteral) String() string {
+	params := make([]string, 0)
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+	return fmt.Sprintf("%s (%s) %s", fl.TokenLiteral(), strings.Join(params, ", "), fl.Body.String())
 }

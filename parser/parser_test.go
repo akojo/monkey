@@ -224,6 +224,29 @@ func TestIFElseExpression(t *testing.T) {
 	expectIdentifier(t, alternative.Expression, "y")
 }
 
+func TestFunctionLiteral(t *testing.T) {
+	program := makeProgram(t, "fn(x, y) { x + y; }")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	function, ok := stmt.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression: expected *ast.FunctionLiteral, got %T", stmt.Expression)
+	}
+
+	if len(function.Parameters) != 2 {
+		t.Errorf("function.Parameters: expected 2, got %d", len(function.Parameters))
+	}
+	expectLiteralExpression(t, function.Parameters[0], "x")
+	expectLiteralExpression(t, function.Parameters[1], "y")
+
+	expectStatementCount(t, function.Body.Statements, 1)
+	bodyStmt := expectExpressionStatement(t, function.Body.Statements[0])
+	expectInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
+}
+
 func makeProgram(t *testing.T, input string) *ast.Program {
 	l := lexer.New(strings.NewReader(input), "<test>")
 	p := New(l)

@@ -1,5 +1,7 @@
 package token
 
+import "fmt"
+
 type TokenType string
 
 type Token struct {
@@ -55,6 +57,13 @@ var keywords = map[string]TokenType{
 	"if":     IF,
 	"else":   ELSE,
 	"return": RETURN,
+}
+
+func (t Token) String() string {
+	if t.Type == IDENT || t.Type == INT {
+		return fmt.Sprintf("%s(%s)", t.Type, t.Literal)
+	}
+	return string(t.Type)
 }
 
 func NewIdent(ident string) Token {
