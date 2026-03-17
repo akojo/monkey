@@ -10,12 +10,13 @@ import (
 )
 
 func TestIntegerExpression(t *testing.T) {
-	test := func(input string, expected int64) {
-		value := eval(input)
-		expectIntegerOjbject(t, value, expected)
-	}
-	test("5", 5)
-	test("100", 100)
+	expectIntegerObject(t, eval("5"), 5)
+	expectIntegerObject(t, eval("100"), 100)
+}
+
+func TestBooleanExpression(t *testing.T) {
+	expectBooleanObject(t, eval("true"), true)
+	expectBooleanObject(t, eval("false"), false)
 }
 
 func eval(input string) object.Object {
@@ -26,7 +27,7 @@ func eval(input string) object.Object {
 	return Eval(program)
 }
 
-func expectIntegerOjbject(t *testing.T, obj object.Object, expected int64) {
+func expectIntegerObject(t *testing.T, obj object.Object, expected int64) {
 	result, ok := obj.(*object.Integer)
 	if !ok {
 		t.Errorf("object: expected Integer, got %T", obj)
@@ -34,5 +35,16 @@ func expectIntegerOjbject(t *testing.T, obj object.Object, expected int64) {
 	}
 	if result.Value != expected {
 		t.Errorf("result.Value: expected %d, got %d", expected, result.Value)
+	}
+}
+
+func expectBooleanObject(t *testing.T, obj object.Object, expected bool) {
+	result, ok := obj.(*object.Boolean)
+	if !ok {
+		t.Errorf("object: expected Boolean, got %T", obj)
+		return
+	}
+	if result.Value != expected {
+		t.Errorf("result.Value: expected %t, got %t", expected, result.Value)
 	}
 }
