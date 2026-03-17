@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/akojo/monkey/evaluator"
 	"github.com/akojo/monkey/lexer"
 	"github.com/akojo/monkey/parser"
 )
@@ -32,7 +33,10 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		fmt.Fprintf(out, "%s", program.String())
+		result := evaluator.Eval(program)
+		if result != nil {
+			fmt.Fprintf(out, "%s\n", result.Inspect())
+		}
 	}
 }
 
