@@ -10,21 +10,41 @@ import (
 )
 
 func TestIntegerExpression(t *testing.T) {
-	expectIntegerObject(t, eval("5"), 5)
-	expectIntegerObject(t, eval("100"), 100)
+	expect(t, "5", 5)
+	expect(t, "100", 100)
+	expect(t, "-5", -5)
+	expect(t, "-100", -100)
 }
 
 func TestBooleanExpression(t *testing.T) {
-	expectBooleanObject(t, eval("true"), true)
-	expectBooleanObject(t, eval("false"), false)
+	expect(t, "true", true)
+	expect(t, "false", false)
+}
+
+func TestBangOperator(t *testing.T) {
+	expect(t, "!true", false)
+	expect(t, "!false", true)
+	expect(t, "!5", false)
+	expect(t, "!!true", true)
+	expect(t, "!!false", false)
+	expect(t, "!!5", true)
 }
 
 func eval(input string) object.Object {
-	l := lexer.New(strings.NewReader(input), "<test>")
-	p := parser.New(l)
+	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
 
 	return Eval(program)
+}
+
+func expect(t *testing.T, input string, expected any) {
+	got := eval(input)
+	switch expected := expected.(type) {
+	case int64:
+		expectIntegerObject(t, got, expected)
+	case bool:
+		expectBooleanObject(t, got, expected)
+	}
 }
 
 func expectIntegerObject(t *testing.T, obj object.Object, expected int64) {

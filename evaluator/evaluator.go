@@ -27,6 +27,9 @@ func Eval(node ast.Node) object.Object {
 		return FALSE
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.PrefixExpression:
+		right := Eval(node.Right)
+		return evalPrefixExpression(node.Operator, right)
 	}
 	return nil
 }
@@ -39,4 +42,37 @@ func evalStatements(stmts []ast.Statement) object.Object {
 	}
 
 	return result
+}
+
+func evalPrefixExpression(op string, right object.Object) object.Object {
+	switch op {
+	case "!":
+		return evalBang(right)
+	case "-":
+		return evalMinus(right)
+	default:
+		return NULL
+	}
+}
+
+func evalBang(right object.Object) object.Object {
+	switch right {
+	case TRUE:
+		return FALSE
+	case FALSE:
+		return TRUE
+	case NULL:
+		return TRUE
+	default:
+		return FALSE
+	}
+}
+
+func evalMinus(right object.Object) object.Object {
+	if right.Type() != object.INTEGER {
+		return NULL
+	}
+
+	value := right.(*object.Integer).Value
+	return &object.Integer{Value: -value}
 }
