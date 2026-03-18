@@ -21,21 +21,19 @@ func Eval(node ast.Node) object.Object {
 
 	// Expressions
 	case *ast.Boolean:
-		if node.Value {
-			return TRUE
-		}
-		return FALSE
+		return toBoolean(node.Value)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.PrefixExpression:
-		right := Eval(node.Right)
-		return evalPrefixExpression(node.Operator, right)
+		return evalPrefixExpression(node.Operator, Eval(node.Right))
+	case *ast.InfixExpression:
+		return evalInfixExpression(node.Operator, Eval(node.Left), Eval(node.Right))
 	}
 	return nil
 }
 
 func evalStatements(stmts []ast.Statement) object.Object {
-	var result object.Object
+	var result object.Object = NULL
 
 	for _, stmt := range stmts {
 		result = Eval(stmt)
@@ -56,16 +54,10 @@ func evalPrefixExpression(op string, right object.Object) object.Object {
 }
 
 func evalBang(right object.Object) object.Object {
-	switch right {
-	case TRUE:
-		return FALSE
-	case FALSE:
+	if right == FALSE || right == NULL {
 		return TRUE
-	case NULL:
-		return TRUE
-	default:
-		return FALSE
 	}
+	return FALSE
 }
 
 func evalMinus(right object.Object) object.Object {
@@ -75,4 +67,47 @@ func evalMinus(right object.Object) object.Object {
 
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
+}
+
+func evalInfixExpression(op string, left object.Object, right object.Object) object.Object {
+	switch {
+	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
+		return evalIntegerInfixExpression(op, left, right)
+	case op == "==":
+		return toBoolean(left == right)
+	case op == "!=":
+		return toBoolean(left != right)
+	}
+	return NULL
+}
+
+func evalIntegerInfixExpression(op string, left object.Object, right object.Object) object.Object {
+	leftVal := left.(*object.Integer).Value
+	rightVal := right.(*object.Integer).Value
+	switch op {
+	case "+":
+		return &object.Integer{Value: leftVal + rightVal}
+	case "-":
+		return &object.Integer{Value: leftVal - rightVal}
+	case "*":
+		return &object.Integer{Value: leftVal * rightVal}
+	case "/":
+		return &object.Integer{Value: leftVal / rightVal}
+	case "<":
+		return toBoolean(leftVal < rightVal)
+	case ">":
+		return toBoolean(leftVal > rightVal)
+	case "==":
+		return toBoolean(leftVal == rightVal)
+	case "!=":
+		return toBoolean(leftVal != rightVal)
+	}
+	return NULL
+}
+
+func toBoolean(value bool) object.Object {
+	if value {
+		return TRUE
+	}
+	return FALSE
 }
