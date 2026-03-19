@@ -56,6 +56,16 @@ func TestBangOperator(t *testing.T) {
 	expect(t, "!!5", true)
 }
 
+func TestIfElseExpression(t *testing.T) {
+	expect(t, "if (true) { 10 }", 10)
+	expect(t, "if (false) { 10 }", nil)
+	expect(t, "if (1) { 10 }", 10)
+	expect(t, "if (1 < 2) { 10 }", 10)
+	expect(t, "if (1 > 2) { 10 }", nil)
+	expect(t, "if (1 < 2) { 10 } else { 20 }", 10)
+	expect(t, "if (1 > 2) { 10 } else { 20 }", 20)
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
@@ -65,6 +75,11 @@ func eval(input string) object.Object {
 
 func expect(t *testing.T, input string, expected any) {
 	got := eval(input)
+	if got == nil {
+		t.Errorf("got unexpected nil")
+		return
+	}
+
 	switch e := expected.(type) {
 	case int:
 		expectIntegerObject(t, got, int64(e))
@@ -72,6 +87,8 @@ func expect(t *testing.T, input string, expected any) {
 		expectIntegerObject(t, got, e)
 	case bool:
 		expectBooleanObject(t, got, e)
+	case nil:
+		expectNullObject(t, got)
 	default:
 		t.Fatalf("invalid type %T", e)
 	}
@@ -96,5 +113,11 @@ func expectBooleanObject(t *testing.T, obj object.Object, expected bool) {
 	}
 	if result.Value != expected {
 		t.Errorf("result.Value: expected %t, got %t", expected, result.Value)
+	}
+}
+
+func expectNullObject(t *testing.T, obj object.Object) {
+	if obj != NULL {
+		t.Errorf("expected NULL, got %q", obj.Inspect())
 	}
 }

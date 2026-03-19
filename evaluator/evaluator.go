@@ -18,6 +18,8 @@ func Eval(node ast.Node) object.Object {
 		return evalStatements(node.Statements)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
+	case *ast.BlockStatement:
+		return evalStatements(node.Statements)
 
 	// Expressions
 	case *ast.Boolean:
@@ -28,6 +30,8 @@ func Eval(node ast.Node) object.Object {
 		return evalPrefixExpression(node.Operator, Eval(node.Right))
 	case *ast.InfixExpression:
 		return evalInfixExpression(node.Operator, Eval(node.Left), Eval(node.Right))
+	case *ast.IFExpression:
+		return evalIfExpression(node)
 	}
 	return nil
 }
@@ -54,10 +58,7 @@ func evalPrefixExpression(op string, right object.Object) object.Object {
 }
 
 func evalBang(right object.Object) object.Object {
-	if right == FALSE || right == NULL {
-		return TRUE
-	}
-	return FALSE
+	return toBoolean(!isTruthy(right))
 }
 
 func evalMinus(right object.Object) object.Object {
@@ -105,9 +106,28 @@ func evalIntegerInfixExpression(op string, left object.Object, right object.Obje
 	return NULL
 }
 
+func evalIfExpression(ie *ast.IFExpression) object.Object {
+	condition := Eval(ie.Condition)
+
+	if isTruthy(condition) {
+		return Eval(ie.Consequence)
+	} else if ie.Alternative != nil {
+		return Eval(ie.Alternative)
+	} else {
+		return NULL
+	}
+}
+
 func toBoolean(value bool) object.Object {
 	if value {
 		return TRUE
 	}
 	return FALSE
+}
+
+func isTruthy(obj object.Object) bool {
+	if obj == FALSE || obj == NULL {
+		return false
+	}
+	return true
 }
