@@ -66,6 +66,14 @@ func TestIfElseExpression(t *testing.T) {
 	expect(t, "if (1 > 2) { 10 } else { 20 }", 20)
 }
 
+func TestReturnStatement(t *testing.T) {
+	expect(t, "return 10;", 10)
+	expect(t, "return 10; 9;", 10)
+	expect(t, "return 2 * 5; 9", 10)
+	expect(t, "9; return 2 * 5; 9", 10)
+	expect(t, "if (true) { if (true) { return 10; } return 1;}", 10)
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
