@@ -8,6 +8,7 @@ import (
 
 	"github.com/akojo/monkey/evaluator"
 	"github.com/akojo/monkey/lexer"
+	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
 )
 
@@ -15,6 +16,7 @@ const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Fprintf(out, PROMPT)
@@ -33,7 +35,7 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		result := evaluator.Eval(program)
+		result := evaluator.Eval(program, env)
 		if result != nil {
 			fmt.Fprintf(out, "%s\n", result.Inspect())
 		}

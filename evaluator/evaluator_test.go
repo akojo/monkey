@@ -81,13 +81,21 @@ func TestErrorHandling(t *testing.T) {
 	expect(t, "-true", errors.New("unknown operator: -BOOLEAN"))
 	expect(t, "5; true + false; 5;", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
 	expect(t, "if (10 > 1) { true + false; }", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
+	expect(t, "foo", errors.New("identifier not found: foo"))
+}
+
+func TestLetStatements(t *testing.T) {
+	expect(t, "let a = 5; a;", 5)
+	expect(t, "let a = 5 * 5; a", 25)
+	expect(t, "let a = 5; let b = a; b", 5)
+	expect(t, "let a = 5; let b = 5; let c = a + b + 5; c;", 15)
 }
 
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
 
-	return Eval(program)
+	return Eval(program, object.NewEnvironment())
 }
 
 func expect(t *testing.T, input string, expected any) {
