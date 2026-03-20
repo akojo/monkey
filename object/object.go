@@ -1,11 +1,15 @@
 package object
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 type ObjectType string
 
 const (
 	BOOLEAN = "BOOLEAN"
+	ERROR   = "ERROR"
 	INTEGER = "INTEGER"
 	NULL    = "NULL"
 	RETURN  = "RETURN"
@@ -16,19 +20,26 @@ type Object interface {
 	Inspect() string
 }
 
-type Integer struct {
-	Value int64
-}
-
-func (i *Integer) Type() ObjectType { return INTEGER }
-func (i *Integer) Inspect() string  { return strconv.FormatInt(i.Value, 10) }
-
 type Boolean struct {
 	Value bool
 }
 
 func (b *Boolean) Type() ObjectType { return BOOLEAN }
 func (b *Boolean) Inspect() string  { return strconv.FormatBool(b.Value) }
+
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjectType { return ERROR }
+func (e *Error) Inspect() string  { return fmt.Sprintf("ERROR: %s", e.Message) }
+
+type Integer struct {
+	Value int64
+}
+
+func (i *Integer) Type() ObjectType { return INTEGER }
+func (i *Integer) Inspect() string  { return strconv.FormatInt(i.Value, 10) }
 
 type Null struct{}
 

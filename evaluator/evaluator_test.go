@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -74,6 +75,14 @@ func TestReturnStatement(t *testing.T) {
 	expect(t, "if (true) { if (true) { return 10; } return 1;}", 10)
 }
 
+func TestErrorHandling(t *testing.T) {
+	expect(t, "5 + true;", errors.New("type mismatch: INTEGER + BOOLEAN"))
+	expect(t, "5 + true; 5", errors.New("type mismatch: INTEGER + BOOLEAN"))
+	expect(t, "-true", errors.New("unknown operator: -BOOLEAN"))
+	expect(t, "5; true + false; 5;", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
+	expect(t, "if (10 > 1) { true + false; }", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
@@ -95,6 +104,8 @@ func expect(t *testing.T, input string, expected any) {
 		expectIntegerObject(t, got, e)
 	case bool:
 		expectBooleanObject(t, got, e)
+	case error:
+		expectErrorObject(t, got, e.Error())
 	case nil:
 		expectNullObject(t, got)
 	default:
@@ -121,6 +132,17 @@ func expectBooleanObject(t *testing.T, obj object.Object, expected bool) {
 	}
 	if result.Value != expected {
 		t.Errorf("result.Value: expected %t, got %t", expected, result.Value)
+	}
+}
+
+func expectErrorObject(t *testing.T, obj object.Object, expected string) {
+	err, ok := obj.(*object.Error)
+	if !ok {
+		t.Errorf("result: expected Error: got %q", obj.Inspect())
+		return
+	}
+	if err.Message != expected {
+		t.Errorf("err.Message: expected %q, got %q", expected, err.Message)
 	}
 }
 
