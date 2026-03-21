@@ -14,7 +14,8 @@ var (
 )
 
 var builtins = map[string]*object.Builtin{
-	"len": {Fn: builtin_len},
+	"append": {Fn: builtin_append},
+	"len":    {Fn: builtin_len},
 }
 
 func Eval(node ast.Node, env *object.Environment) object.Object {

@@ -165,6 +165,11 @@ func TestBuiltinFunctions(t *testing.T) {
 	expect(t, `len("hello world")`, 11)
 	expect(t, "len(1)", errors.New("argument to `len` not supported, got INTEGER"))
 	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
+	expect(t, "len([1, 2, 3])", 3)
+	expect(t, "len([])", 0)
+
+	expect(t, "let a = append([1, 2], 3); a[2]", 3)
+	expect(t, "let a = append([], [1]); a[0][0]", 1)
 }
 
 func TestArrayLiterals(t *testing.T) {
