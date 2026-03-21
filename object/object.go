@@ -3,16 +3,20 @@ package object
 import (
 	"fmt"
 	"strconv"
+	"strings"
+
+	"github.com/akojo/monkey/ast"
 )
 
 type ObjectType string
 
 const (
-	BOOLEAN = "BOOLEAN"
-	ERROR   = "ERROR"
-	INTEGER = "INTEGER"
-	NULL    = "NULL"
-	RETURN  = "RETURN"
+	BOOLEAN  = "BOOLEAN"
+	ERROR    = "ERROR"
+	FUNCTION = "FUNCTION"
+	INTEGER  = "INTEGER"
+	NULL     = "NULL"
+	RETURN   = "RETURN"
 )
 
 type Object interface {
@@ -33,6 +37,21 @@ type Error struct {
 
 func (e *Error) Type() ObjectType { return ERROR }
 func (e *Error) Inspect() string  { return fmt.Sprintf("ERROR: %s", e.Message) }
+
+type Function struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (f *Function) Type() ObjectType { return FUNCTION }
+func (f *Function) Inspect() string {
+	var params = make([]string, 0)
+	for _, param := range f.Parameters {
+		params = append(params, param.String())
+	}
+	return fmt.Sprintf("fn (%s) %s", strings.Join(params, ", "), f.Body.PrettyPrint(1))
+}
 
 type Integer struct {
 	Value int64

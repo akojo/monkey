@@ -73,6 +73,16 @@ func TestReturnStatement(t *testing.T) {
 	expect(t, "return 2 * 5; 9", 10)
 	expect(t, "9; return 2 * 5; 9", 10)
 	expect(t, "if (true) { if (true) { return 10; } return 1;}", 10)
+	expect(t, "let f = fn(x) { return x; return x + 10 }; f(10);", 10)
+	expect(t, `
+		let f = fn(x) {
+			let g = fn(y) {
+				return y + 5
+			}
+			return g(x) + 5
+		}
+		f(5)
+	`, 15)
 }
 
 func TestErrorHandling(t *testing.T) {
@@ -89,6 +99,54 @@ func TestLetStatements(t *testing.T) {
 	expect(t, "let a = 5 * 5; a", 25)
 	expect(t, "let a = 5; let b = a; b", 5)
 	expect(t, "let a = 5; let b = 5; let c = a + b + 5; c;", 15)
+}
+
+func TestFunctionObject(t *testing.T) {
+	evaluated := eval("fn(x) { x + 2; };")
+
+	fn, ok := evaluated.(*object.Function)
+	if !ok {
+		t.Fatalf("fn: expected *object.Function, got %T", evaluated)
+	}
+
+	if len(fn.Parameters) != 1 {
+		t.Fatalf("fn.Parameters: expected 1, got %d", len(fn.Parameters))
+	}
+
+	if fn.Parameters[0].String() != "x" {
+		t.Fatalf("fn.Parameters[0]: expected \"x\", got %q", fn.Parameters[0].String())
+	}
+
+	if len(fn.Body.Statements) != 1 {
+		t.Fatalf("fn.Body: expected 1 statement, got %d", len(fn.Body.Statements))
+	}
+
+	expectedBody := "(x + 2)"
+	gotBody := fn.Body.Statements[0].String()
+	if gotBody != expectedBody {
+		t.Fatalf("fn.Body: expected %q, got %q", expectedBody, gotBody)
+	}
+}
+
+func TestFunctionCall(t *testing.T) {
+	expect(t, "let id = fn(x) { x; }; id(5);", 5)
+	expect(t, "let id = fn(x) { return x;}; id(5);", 5)
+	expect(t, "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20)
+	expect(t, "fn(x) { -x }(5)", -5)
+	expect(t, `
+		let f = fn(x) {
+			let g = fn(y) {
+				return x + y
+			}
+			return g(5)
+		}
+		f(5)
+	`, 10)
+	expect(t, `
+		let add = fn(x) { fn(y) { x + y } }
+		let add2 = add(2)
+		add2(2)
+	`, 4)
 }
 
 func eval(input string) object.Object {
