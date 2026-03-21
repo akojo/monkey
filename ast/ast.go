@@ -258,6 +258,19 @@ func (al *ArrayLiteral) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s[%s]", indent(level), strings.Join(elements, ", "))
 }
 
+type IndexExpression struct {
+	Token token.Token
+	Left  Expression
+	Index Expression
+}
+
+func (ie *IndexExpression) expressionNode()      {}
+func (ie *IndexExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *IndexExpression) String() string       { return ie.PrettyPrint(0) }
+func (ie *IndexExpression) PrettyPrint(level int) string {
+	return fmt.Sprintf("%s(%s[%s])", indent(level), ie.Left.PrettyPrint(0), ie.Index.PrettyPrint(0))
+}
+
 func indent(level int) string {
 	var out bytes.Buffer
 	for range level {

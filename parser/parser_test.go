@@ -207,6 +207,8 @@ func TestOperatorPrecedences(t *testing.T) {
 	test("a + add(b * c) + d", "((a + add((b * c))) + d);\n")
 	test("add(a, 1, 2 * 3, add(6, 7 *8))", "add(a, 1, (2 * 3), add(6, (7 * 8)));\n")
 	test("add(a + b * c + d)", "add(((a + (b * c)) + d));\n")
+	test("a * [1, 2, 3][b * c]", "(a * ([1, 2, 3][(b * c)]));\n")
+	test("add(a * -b[2])", "add((a * (-(b[2]))));\n")
 }
 
 func TestIFExpression(t *testing.T) {
@@ -335,7 +337,21 @@ func TestEmptyArrayLiteral(t *testing.T) {
 	if len(array.Elements) != 0 {
 		t.Fatalf("array.Elements: expected 0, got %d", len(array.Elements))
 	}
+}
 
+func TestIndexExpressions(t *testing.T) {
+	program := makeProgram(t, "myArray[1 + 1]")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	indexExp, ok := stmt.Expression.(*ast.IndexExpression)
+	if !ok {
+		t.Fatalf("exp not *ast.IndexExpression. got=%T", stmt.Expression)
+	}
+
+	expectIdentifier(t, indexExp.Left, "myArray")
+	expectInfixExpression(t, indexExp.Index, 1, "+", 1)
 }
 
 func makeProgram(t *testing.T, input string) *ast.Program {
