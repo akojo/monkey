@@ -62,7 +62,7 @@ func TestReturnStatements(t *testing.T) {
 
 	test("return 5;", 5)
 	test("return true;", true)
-	test("return x;", "x")
+	test("return x", "x")
 }
 
 func TestIdentifierExpression(t *testing.T) {

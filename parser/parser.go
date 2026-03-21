@@ -169,8 +169,8 @@ func (p *Parser) parseReturnStatement() (*ast.ReturnStatement, error) {
 		return nil, fmt.Errorf("return: %w", err)
 	}
 
-	if err := p.expectPeek(token.SEMICOLON); err != nil {
-		return nil, fmt.Errorf("return: %w", err)
+	if p.peekToken.Type == token.SEMICOLON {
+		p.nextToken()
 	}
 
 	return stmt, nil
