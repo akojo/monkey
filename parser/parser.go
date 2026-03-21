@@ -62,6 +62,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
@@ -382,6 +383,18 @@ func (p *Parser) parseStringLiteral() (ast.Expression, error) {
 	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}, nil
 }
 
+func (p *Parser) parseArrayLiteral() (ast.Expression, error) {
+	var err error
+	array := &ast.ArrayLiteral{Token: p.curToken}
+
+	array.Elements, err = p.parseExpressionList(token.RBRACKET)
+	if err != nil {
+		return nil, err
+	}
+
+	return array, nil
+}
+
 func (p *Parser) parseInfixExpression(left ast.Expression) (ast.Expression, error) {
 	var err error
 
@@ -406,7 +419,7 @@ func (p *Parser) parseCallExpression(function ast.Expression) (ast.Expression, e
 	var err error
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
 
-	exp.Arguments, err = p.parseCallArguments()
+	exp.Arguments, err = p.parseExpressionList(token.RPAREN)
 	if err != nil {
 		return nil, fmt.Errorf("call: %w", err)
 	}
@@ -414,10 +427,10 @@ func (p *Parser) parseCallExpression(function ast.Expression) (ast.Expression, e
 	return exp, nil
 }
 
-func (p *Parser) parseCallArguments() ([]ast.Expression, error) {
+func (p *Parser) parseExpressionList(end token.TokenType) ([]ast.Expression, error) {
 	args := make([]ast.Expression, 0)
 
-	if p.peekToken.Type == token.RPAREN {
+	if p.peekToken.Type == end {
 		p.nextToken()
 		return args, nil
 	}
@@ -440,7 +453,7 @@ func (p *Parser) parseCallArguments() ([]ast.Expression, error) {
 		args = append(args, exp)
 	}
 
-	if err := p.expectPeek(token.RPAREN); err != nil {
+	if err := p.expectPeek(end); err != nil {
 		return nil, fmt.Errorf("args: %w", err)
 	}
 

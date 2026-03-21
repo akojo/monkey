@@ -300,6 +300,44 @@ func TestCallExpression(t *testing.T) {
 	expectInfixExpression(t, exp.Arguments[1], 2, "*", 3)
 }
 
+func TestArrayLiteral(t *testing.T) {
+	program := makeProgram(t, "[1, 2 * 2, 3 + 3]")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+
+	array, ok := stmt.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression: expected *ast.ArrayLiteral, got %T", stmt.Expression)
+	}
+
+	if len(array.Elements) != 3 {
+		t.Fatalf("array.Elements: expected 3, got %d", len(array.Elements))
+	}
+
+	expectIntegerLiteral(t, array.Elements[0], 1)
+	expectInfixExpression(t, array.Elements[1], 2, "*", 2)
+	expectInfixExpression(t, array.Elements[2], 3, "+", 3)
+}
+
+func TestEmptyArrayLiteral(t *testing.T) {
+	program := makeProgram(t, "[]")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	array, ok := stmt.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("stmt.Expression: expected *ast.ArrayLiteral, got %T", stmt.Expression)
+	}
+
+	if len(array.Elements) != 0 {
+		t.Fatalf("array.Elements: expected 0, got %d", len(array.Elements))
+	}
+
+}
+
 func makeProgram(t *testing.T, input string) *ast.Program {
 	l := lexer.New(strings.NewReader(input), "<test>")
 	p := New(l)

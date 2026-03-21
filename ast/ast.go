@@ -242,6 +242,22 @@ func (sl *StringLiteral) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s\"%s\"", indent(level), sl.Token.Literal)
 }
 
+type ArrayLiteral struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+func (al *ArrayLiteral) expressionNode()      {}
+func (al *ArrayLiteral) TokenLiteral() string { return al.Token.Literal }
+func (al *ArrayLiteral) String() string       { return al.PrettyPrint(0) }
+func (al *ArrayLiteral) PrettyPrint(level int) string {
+	elements := make([]string, len(al.Elements))
+	for i, el := range al.Elements {
+		elements[i] = el.PrettyPrint(0)
+	}
+	return fmt.Sprintf("%s[%s]", indent(level), strings.Join(elements, ", "))
+}
+
 func indent(level int) string {
 	var out bytes.Buffer
 	for range level {

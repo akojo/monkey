@@ -188,6 +188,20 @@ func TestStrings(t *testing.T) {
 	testLexer(t, input, expectTokens)
 }
 
+func TestArray(t *testing.T) {
+	input := `[1, 2]`
+
+	expectTokens := []expectToken{
+		{token.LBRACKET, "["},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
+	}
+
+	testLexer(t, input, expectTokens)
+}
+
 func testLexer(t *testing.T, input string, expectTokens []expectToken) {
 	l := New(strings.NewReader(input), "<test>")
 

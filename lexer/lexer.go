@@ -29,6 +29,8 @@ var ops map[rune]token.Token = map[rune]token.Token{
 	')': {Type: token.RPAREN, Literal: ")"},
 	'{': {Type: token.LBRACE, Literal: "{"},
 	'}': {Type: token.RBRACE, Literal: "}"},
+	'[': {Type: token.LBRACKET, Literal: "["},
+	']': {Type: token.RBRACKET, Literal: "]"},
 	0:   {Type: token.EOF, Literal: ""},
 }
 
