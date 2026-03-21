@@ -175,6 +175,19 @@ func TestUnicodeIdentifiers(t *testing.T) {
 	testLexer(t, input, expectTokens)
 }
 
+func TestStrings(t *testing.T) {
+	input := `
+		"foobar"
+		"foo bar"
+	`
+	expectTokens := []expectToken{
+		{token.STRING, "foobar"},
+		{token.STRING, "foo bar"},
+	}
+
+	testLexer(t, input, expectTokens)
+}
+
 func testLexer(t *testing.T, input string, expectTokens []expectToken) {
 	l := New(strings.NewReader(input), "<test>")
 

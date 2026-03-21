@@ -17,6 +17,7 @@ const (
 	INTEGER  = "INTEGER"
 	NULL     = "NULL"
 	RETURN   = "RETURN"
+	STRING   = "STRING"
 )
 
 type Object interface {
@@ -71,3 +72,10 @@ type Return struct {
 
 func (r *Return) Type() ObjectType { return RETURN }
 func (r *Return) Inspect() string  { return r.Value.Inspect() }
+
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType { return STRING }
+func (s *String) Inspect() string  { return s.Value }

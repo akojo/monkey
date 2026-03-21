@@ -92,6 +92,7 @@ func TestErrorHandling(t *testing.T) {
 	expect(t, "5; true + false; 5;", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
 	expect(t, "if (10 > 1) { true + false; }", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
 	expect(t, "foo", errors.New("identifier not found: foo"))
+	expect(t, `"hello" - "world"`, errors.New("unknown operator: STRING - STRING"))
 }
 
 func TestLetStatements(t *testing.T) {
@@ -149,6 +150,14 @@ func TestFunctionCall(t *testing.T) {
 	`, 4)
 }
 
+func TestStringLiteral(t *testing.T) {
+	expect(t, `"hello, world"`, "hello, world")
+}
+
+func TestStringConcatenation(t *testing.T) {
+	expect(t, `"hello" + " " + "world"`, "hello world")
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
@@ -170,6 +179,8 @@ func expect(t *testing.T, input string, expected any) {
 		expectIntegerObject(t, got, e)
 	case bool:
 		expectBooleanObject(t, got, e)
+	case string:
+		expectStringObject(t, got, e)
 	case error:
 		expectErrorObject(t, got, e.Error())
 	case nil:
@@ -198,6 +209,16 @@ func expectBooleanObject(t *testing.T, obj object.Object, expected bool) {
 	}
 	if result.Value != expected {
 		t.Errorf("result.Value: expected %t, got %t", expected, result.Value)
+	}
+}
+
+func expectStringObject(t *testing.T, obj object.Object, expected string) {
+	str, ok := obj.(*object.String)
+	if !ok {
+		t.Fatalf("str: expected String, got %q", obj.Type())
+	}
+	if str.Value != expected {
+		t.Errorf("str.Value: expected %q, got %q", expected, str.Value)
 	}
 }
 

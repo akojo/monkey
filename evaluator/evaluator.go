@@ -40,6 +40,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return toBoolean(node.Value)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.PrefixExpression:
 		right := Eval(node.Right, env)
 		if isError(right) {
@@ -139,7 +141,13 @@ func evalInfixExpression(op string, left object.Object, right object.Object) obj
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
 	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
-		return evalIntegerInfixExpression(op, left, right)
+		leftInt := left.(*object.Integer)
+		rightInt := right.(*object.Integer)
+		return evalIntegerInfixExpression(op, leftInt, rightInt)
+	case left.Type() == object.STRING && right.Type() == object.STRING:
+		leftStr := left.(*object.String)
+		rightStr := right.(*object.String)
+		return evalStringInfixExpression(op, leftStr, rightStr)
 	case op == "==":
 		return toBoolean(left == right)
 	case op == "!=":
@@ -148,28 +156,33 @@ func evalInfixExpression(op string, left object.Object, right object.Object) obj
 	return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 }
 
-func evalIntegerInfixExpression(op string, left object.Object, right object.Object) object.Object {
-	leftVal := left.(*object.Integer).Value
-	rightVal := right.(*object.Integer).Value
+func evalIntegerInfixExpression(op string, left *object.Integer, right *object.Integer) object.Object {
 	switch op {
 	case "+":
-		return &object.Integer{Value: leftVal + rightVal}
+		return &object.Integer{Value: left.Value + right.Value}
 	case "-":
-		return &object.Integer{Value: leftVal - rightVal}
+		return &object.Integer{Value: left.Value - right.Value}
 	case "*":
-		return &object.Integer{Value: leftVal * rightVal}
+		return &object.Integer{Value: left.Value * right.Value}
 	case "/":
-		return &object.Integer{Value: leftVal / rightVal}
+		return &object.Integer{Value: left.Value / right.Value}
 	case "<":
-		return toBoolean(leftVal < rightVal)
+		return toBoolean(left.Value < right.Value)
 	case ">":
-		return toBoolean(leftVal > rightVal)
+		return toBoolean(left.Value > right.Value)
 	case "==":
-		return toBoolean(leftVal == rightVal)
+		return toBoolean(left.Value == right.Value)
 	case "!=":
-		return toBoolean(leftVal != rightVal)
+		return toBoolean(left.Value != right.Value)
 	}
 	return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+}
+
+func evalStringInfixExpression(op string, left *object.String, right *object.String) object.Object {
+	if op != "+" {
+		return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+	}
+	return &object.String{Value: left.Value + right.Value}
 }
 
 func evalIfExpression(ie *ast.IFExpression, env *object.Environment) object.Object {

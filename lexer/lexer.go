@@ -2,6 +2,7 @@ package lexer
 
 import (
 	"io"
+	"strings"
 	"text/scanner"
 	"unicode"
 
@@ -73,6 +74,8 @@ func (l *Lexer) NextToken() token.Token {
 			tok = token.NewIdent(l.scanner.TokenText())
 		case scanner.Int:
 			tok = token.Token{Type: token.INT, Literal: l.scanner.TokenText()}
+		case scanner.String:
+			tok = token.Token{Type: token.STRING, Literal: strings.Trim(l.scanner.TokenText(), `"`)}
 		default:
 			tok = token.Token{Type: token.ILLEGAL, Literal: string(ch)}
 		}

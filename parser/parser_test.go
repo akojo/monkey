@@ -98,6 +98,23 @@ func TestBooleanExpression(t *testing.T) {
 	expectLiteralExpression(t, stmt.Expression, true)
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	program := makeProgram(t, `"hello, world";`)
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	literal, ok := stmt.Expression.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("literal: expected *ast.StringLiteral, got %T", stmt.Expression)
+	}
+
+	const expected = "hello, world"
+	if literal.Value != expected {
+		t.Errorf("literal.Value: expected %q, got %q", expected, literal.Value)
+	}
+}
+
 func TestPrefixExpressions(t *testing.T) {
 	test := func(input string, op string, value any) {
 		program := makeProgram(t, input)

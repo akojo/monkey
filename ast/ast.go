@@ -230,6 +230,18 @@ func (ce *CallExpression) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s(%s)", ce.Function.PrettyPrint(level), strings.Join(args, ", "))
 }
 
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (sl *StringLiteral) expressionNode()      {}
+func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
+func (sl *StringLiteral) String() string       { return sl.Token.Literal }
+func (sl *StringLiteral) PrettyPrint(level int) string {
+	return fmt.Sprintf("%s\"%s\"", indent(level), sl.Token.Literal)
+}
+
 func indent(level int) string {
 	var out bytes.Buffer
 	for range level {
