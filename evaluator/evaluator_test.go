@@ -167,6 +167,34 @@ func TestBuiltinFunctions(t *testing.T) {
 	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
 }
 
+func TestArrayLiterals(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+
+	evaluated := eval(input)
+
+	array, ok := evaluated.(*object.Array)
+	if !ok {
+		t.Fatalf("array: expected *object.Array, got %T", evaluated)
+	}
+
+	if len(array.Elements) != 3 {
+		t.Fatalf("array.Elements: expected 3 elements, got %d", len(array.Elements))
+	}
+
+	expectIntegerObject(t, array.Elements[0], 1)
+	expectIntegerObject(t, array.Elements[1], 4)
+	expectIntegerObject(t, array.Elements[2], 6)
+}
+
+func TestArrayIndexExpressions(t *testing.T) {
+	expect(t, "[1, 2, 3][0]", 1)
+	expect(t, "[1, 2, 3][2]", 3)
+	expect(t, "[1, 2, 3][3]", nil)
+	expect(t, "let i = 0; [1, 2][i + 1]", 2)
+	expect(t, "let a = [1, 2, 3]; a[2]", 3)
+	expect(t, "let a = [1, 2, 3]; a[0] * a[1]", 2)
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
