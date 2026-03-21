@@ -158,6 +158,15 @@ func TestStringConcatenation(t *testing.T) {
 	expect(t, `"hello" + " " + "world"`, "hello world")
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	expect(t, `len("")`, 0)
+	expect(t, `len("mitä")`, 4)
+	expect(t, `len("💩")`, 1)
+	expect(t, `len("hello world")`, 11)
+	expect(t, "len(1)", errors.New("argument to `len` not supported, got INTEGER"))
+	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()

@@ -12,6 +12,7 @@ type ObjectType string
 
 const (
 	BOOLEAN  = "BOOLEAN"
+	BUILTIN  = "BUILTIN"
 	ERROR    = "ERROR"
 	FUNCTION = "FUNCTION"
 	INTEGER  = "INTEGER"
@@ -31,6 +32,14 @@ type Boolean struct {
 
 func (b *Boolean) Type() ObjectType { return BOOLEAN }
 func (b *Boolean) Inspect() string  { return strconv.FormatBool(b.Value) }
+
+type BuiltinFunction func(args ...Object) Object
+type Builtin struct {
+	Fn BuiltinFunction
+}
+
+func (b *Builtin) Type() ObjectType { return BUILTIN }
+func (b *Builtin) Inspect() string  { return "<builtin>" }
 
 type Error struct {
 	Message string
