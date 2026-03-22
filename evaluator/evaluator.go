@@ -15,6 +15,7 @@ var (
 
 var builtins = map[string]*object.Builtin{
 	"append": {Fn: builtin_append},
+	"equals": {Fn: builtin_equals},
 	"len":    {Fn: builtin_len},
 }
 
@@ -159,6 +160,10 @@ func evalMinus(right object.Object) object.Object {
 
 func evalInfixExpression(op string, left object.Object, right object.Object) object.Object {
 	switch {
+	case op == "==":
+		return toBoolean(equals(left, right))
+	case op == "!=":
+		return toBoolean(!equals(left, right))
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
 	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
@@ -169,10 +174,6 @@ func evalInfixExpression(op string, left object.Object, right object.Object) obj
 		leftStr := left.(*object.String)
 		rightStr := right.(*object.String)
 		return evalStringInfixExpression(op, leftStr, rightStr)
-	case op == "==":
-		return toBoolean(left == right)
-	case op == "!=":
-		return toBoolean(left != right)
 	}
 	return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 }
@@ -191,10 +192,6 @@ func evalIntegerInfixExpression(op string, left *object.Integer, right *object.I
 		return toBoolean(left.Value < right.Value)
 	case ">":
 		return toBoolean(left.Value > right.Value)
-	case "==":
-		return toBoolean(left.Value == right.Value)
-	case "!=":
-		return toBoolean(left.Value != right.Value)
 	}
 	return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
 }

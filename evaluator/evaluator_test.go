@@ -30,6 +30,11 @@ func TestIntegerExpression(t *testing.T) {
 func TestBooleanExpression(t *testing.T) {
 	expect(t, "true", true)
 	expect(t, "false", false)
+	expect(t, "true == true", true)
+	expect(t, "false == false", true)
+	expect(t, "true != false", true)
+	expect(t, "false != true", true)
+
 	expect(t, "1 < 2", true)
 	expect(t, "1 > 2", false)
 	expect(t, "1 < 1", false)
@@ -38,14 +43,39 @@ func TestBooleanExpression(t *testing.T) {
 	expect(t, "1 != 1", false)
 	expect(t, "1 == 2", false)
 	expect(t, "1 != 2", true)
-	expect(t, "true == true", true)
-	expect(t, "false == false", true)
-	expect(t, "true != false", true)
-	expect(t, "false != true", true)
+
+	expect(t, `"foo" == "foo"`, true)
+	expect(t, `"foo" != "foo"`, false)
+	expect(t, `"foo" == "bar"`, false)
+	expect(t, `"foo" != "bar"`, true)
+
+	expect(t, "[] == []", true)
+	expect(t, "[1, 2] == [1, 2]", true)
+	expect(t, "[1, 2] != [1, 2]", false)
+	expect(t, "[1, 2] == [2, 3]", false)
+	expect(t, "[1, 2] == [1, 2, 3]", false)
+	expect(t, "[1, [2, 3]] == [1, [2, 3]]", true)
+	expect(t, `["a", "b"] == ["a", "b"]`, true)
+	expect(t, `[true, 1, "2", [3]] == [true, 1, "2", [3]]`, true)
+
 	expect(t, "(1 < 2) == true", true)
 	expect(t, "(1 < 2) == false", false)
 	expect(t, "(1 > 2) != true", true)
 	expect(t, "(1 > 2) != false", false)
+
+	expect(t, "1 == true", false)
+	expect(t, "1 == false", false)
+	expect(t, `1 == "1"`, false)
+	expect(t, `0 == []`, false)
+	expect(t, `"true" == true`, false)
+	expect(t, `"true" == false`, false)
+	expect(t, `"" == true`, false)
+	expect(t, `"" == false`, false)
+	expect(t, `"" == []`, false)
+	expect(t, "[1] == true", false)
+	expect(t, "[1] == false", false)
+	expect(t, "[] == true", false)
+	expect(t, "[] == false", false)
 }
 
 func TestBangOperator(t *testing.T) {
@@ -170,6 +200,10 @@ func TestBuiltinFunctions(t *testing.T) {
 
 	expect(t, "let a = append([1, 2], 3); a[2]", 3)
 	expect(t, "let a = append([], [1]); a[0][0]", 1)
+
+	expect(t, "equals(1, 1)", true)
+	expect(t, `equals("foo", "foo")`, true)
+	expect(t, "equals([1,2], [1,2])", true)
 }
 
 func TestArrayLiterals(t *testing.T) {
