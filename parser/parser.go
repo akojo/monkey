@@ -28,6 +28,7 @@ type Parser struct {
 const (
 	_ int = iota
 	LOWEST
+	SLICE       // array[start:end]
 	EQUALS      // ==, !=
 	LESSGREATER // <, >
 	SUM         // +, -
@@ -38,6 +39,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.COLON:    SLICE,
 	token.EQ:       EQUALS,
 	token.NE:       EQUALS,
 	token.LT:       LESSGREATER,
@@ -65,6 +67,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefix(token.COLON, p.parsePrefixSliceExpression)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
@@ -77,6 +80,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.ASTERISK, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
+	p.registerInfix(token.COLON, p.parseInfixSliceExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -441,6 +445,28 @@ func (p *Parser) parseIndexExpression(left ast.Expression) (ast.Expression, erro
 	}
 
 	err = p.expectPeek(token.RBRACKET)
+	if err != nil {
+		return nil, err
+	}
+
+	return exp, nil
+}
+
+func (p *Parser) parsePrefixSliceExpression() (ast.Expression, error) {
+	return p.parseInfixSliceExpression(nil)
+}
+
+func (p *Parser) parseInfixSliceExpression(start ast.Expression) (ast.Expression, error) {
+	var err error
+	exp := &ast.SliceExpression{Token: p.curToken, Start: start}
+
+	if p.peekToken.Type == token.RBRACKET {
+		return exp, nil
+	}
+
+	p.nextToken()
+
+	exp.End, err = p.parseExpression(LOWEST)
 	if err != nil {
 		return nil, err
 	}

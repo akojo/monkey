@@ -234,6 +234,14 @@ func TestArrayIndexExpressions(t *testing.T) {
 	expect(t, "let a = [1, 2, 3]; a[0] * a[1]", 2)
 }
 
+func TestArraySlices(t *testing.T) {
+	expect(t, "let a = [1, 2, 3, 4]; slice(a, 1, 3) == [2, 3]", true)
+
+	expect(t, "let a = [1, 2, 3, 4][1:3]; a == [2, 3]", true)
+	expect(t, "let a = [1, 2, 3, 4][1:]; a == [2, 3, 4]", true)
+	expect(t, "let a = [1, 2, 3, 4][:2]; a == [1, 2]", true)
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
@@ -269,7 +277,7 @@ func expect(t *testing.T, input string, expected any) {
 func expectIntegerObject(t *testing.T, obj object.Object, expected int64) {
 	result, ok := obj.(*object.Integer)
 	if !ok {
-		t.Errorf("result: expected Integer, got %T", obj)
+		t.Errorf("result: expected Integer, got %T: %s", obj, obj.Inspect())
 		return
 	}
 	if result.Value != expected {

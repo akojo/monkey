@@ -271,6 +271,19 @@ func (ie *IndexExpression) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s(%s[%s])", indent(level), ie.Left.PrettyPrint(0), ie.Index.PrettyPrint(0))
 }
 
+type SliceExpression struct {
+	Token token.Token
+	Start Expression
+	End   Expression
+}
+
+func (se *SliceExpression) expressionNode()      {}
+func (se *SliceExpression) TokenLiteral() string { return se.Token.Literal }
+func (se *SliceExpression) String() string       { return se.PrettyPrint(0) }
+func (se *SliceExpression) PrettyPrint(level int) string {
+	return fmt.Sprintf("%s(%s:%s)", indent(level), se.Start.PrettyPrint(0), se.End.PrettyPrint(0))
+}
+
 func indent(level int) string {
 	var out bytes.Buffer
 	for range level {

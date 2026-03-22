@@ -79,7 +79,7 @@ func TestTokenizeIllegal(t *testing.T) {
 }
 
 func TestTokenizeOperators(t *testing.T) {
-	input := `!+-*/5<>;`
+	input := `!+-*/5<>;:`
 	expectTokens := []expectToken{
 		{token.BANG, "!"},
 		{token.PLUS, "+"},
@@ -90,6 +90,7 @@ func TestTokenizeOperators(t *testing.T) {
 		{token.LT, "<"},
 		{token.GT, ">"},
 		{token.SEMICOLON, ";"},
+		{token.COLON, ":"},
 		{token.EOF, ""},
 	}
 

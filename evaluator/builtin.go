@@ -46,6 +46,25 @@ func builtin_equals(args ...object.Object) object.Object {
 	return toBoolean(equals(args[0], args[1]))
 }
 
+func builtin_slice(args ...object.Object) object.Object {
+	if err := argCheck(3, args); err != nil {
+		return err
+	}
+	array, ok := args[0].(*object.Array)
+	if !ok {
+		newError("argument 0: got %s, want ARRAY", args[0].Type())
+	}
+	start, ok := args[1].(*object.Integer)
+	if !ok {
+		newError("argument 1: got %s, want INTEGER", args[0].Type())
+	}
+	end, ok := args[2].(*object.Integer)
+	if !ok {
+		newError("argument 2: got %s, want INTEGER", args[0].Type())
+	}
+	return slice(array, start.Value, end.Value)
+}
+
 func equals(left object.Object, right object.Object) bool {
 	if left.Type() != right.Type() {
 		return false
@@ -75,6 +94,32 @@ func arrayEquals(left *object.Array, right *object.Array) bool {
 		}
 	}
 	return true
+}
+
+func slice(array *object.Array, start int64, end int64) object.Object {
+	if start < 0 {
+		start = 0
+	}
+	if start > int64(len(array.Elements)) {
+		start = int64(len(array.Elements))
+	}
+	if end < 0 {
+		end = 0
+	}
+	if end > int64(len(array.Elements)) {
+		end = int64(len(array.Elements))
+	}
+	if !(start < end) {
+		return &object.Array{Elements: make([]object.Object, 0)}
+	}
+
+	newSlice := &object.Array{Elements: make([]object.Object, end-start)}
+
+	for i := range newSlice.Elements {
+		newSlice.Elements[i] = array.Elements[start+int64(i)]
+	}
+
+	return newSlice
 }
 
 func argCheck(want int, args []object.Object) object.Object {

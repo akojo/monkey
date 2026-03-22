@@ -27,6 +27,7 @@ const (
 	MINUS    = "-"
 	SLASH    = "/"
 	ASTERISK = "*"
+	COLON    = ":" // array slice operator
 
 	EQ = "=="
 	NE = "!="

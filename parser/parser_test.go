@@ -345,13 +345,53 @@ func TestIndexExpressions(t *testing.T) {
 	expectStatementCount(t, program.Statements, 1)
 
 	stmt := expectExpressionStatement(t, program.Statements[0])
-	indexExp, ok := stmt.Expression.(*ast.IndexExpression)
+	index, ok := stmt.Expression.(*ast.IndexExpression)
 	if !ok {
-		t.Fatalf("exp not *ast.IndexExpression. got=%T", stmt.Expression)
+		t.Fatalf("index: expected *ast.IndexExpression. got %T", stmt.Expression)
 	}
 
-	expectIdentifier(t, indexExp.Left, "myArray")
-	expectInfixExpression(t, indexExp.Index, 1, "+", 1)
+	expectIdentifier(t, index.Left, "myArray")
+	expectInfixExpression(t, index.Index, 1, "+", 1)
+}
+
+func TestSliceExpressions(t *testing.T) {
+	test := func(input string, start *int64, end *int64) {
+		program := makeProgram(t, input)
+
+		expectStatementCount(t, program.Statements, 1)
+
+		stmt := expectExpressionStatement(t, program.Statements[0])
+		index, ok := stmt.Expression.(*ast.IndexExpression)
+		if !ok {
+			t.Fatalf("slice: expected *ast.IndexExpression, got %T", stmt.Expression)
+		}
+
+		slice, ok := index.Index.(*ast.SliceExpression)
+		if !ok {
+			t.Fatalf("slice: expected *ast.SliceExpression, got %T", stmt.Expression)
+		}
+
+		if start != nil {
+			expectIntegerLiteral(t, slice.Start, *start)
+		} else if slice.Start != nil {
+			t.Errorf("slice.Start: expect nil, got %+v", slice.Start)
+		}
+
+		if end != nil {
+			expectIntegerLiteral(t, slice.End, *end)
+		} else if slice.End != nil {
+			t.Errorf("slice.End: expect nil, got %+v", slice.End)
+		}
+	}
+
+	start := int64(1)
+	end := int64(2)
+
+	test("myarray[1:2]", &start, &end)
+	test("[1, 2][1:2]", &start, &end)
+	test("myarray[1:]", &start, nil)
+	test("myarray[:2]", nil, &end)
+	test("myarray[:]", nil, nil)
 }
 
 func makeProgram(t *testing.T, input string) *ast.Program {

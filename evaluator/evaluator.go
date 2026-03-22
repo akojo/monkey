@@ -17,6 +17,7 @@ var builtins = map[string]*object.Builtin{
 	"append": {Fn: builtin_append},
 	"equals": {Fn: builtin_equals},
 	"len":    {Fn: builtin_len},
+	"slice":  {Fn: builtin_slice},
 }
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
@@ -99,6 +100,22 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return index
 		}
 		return evalIndexExpression(left, index)
+	case *ast.SliceExpression:
+		var start object.Object
+		var end object.Object
+		if node.Start != nil {
+			start = Eval(node.Start, env)
+			if isError(start) {
+				return start
+			}
+		}
+		if node.End != nil {
+			end = Eval(node.End, env)
+			if isError(end) {
+				return end
+			}
+		}
+		return evalSliceExpression(start, end)
 	}
 	return nil
 }
@@ -279,8 +296,37 @@ func evalIndexExpression(left object.Object, index object.Object) object.Object 
 			return NULL
 		}
 		return array.Elements[i]
+	case left.Type() == object.ARRAY && index.Type() == object.SLICE:
+		array := left.(*object.Array)
+		slice := index.(*object.Slice)
+		return evalSliceIndexExpression(array, slice)
 	}
 	return newError("index operator not supported: %s", left.Type())
+}
+
+func evalSliceIndexExpression(array *object.Array, sliceObj *object.Slice) object.Object {
+	var end int64
+	if sliceObj.End == nil {
+		end = int64(len(array.Elements))
+	} else {
+		end = *sliceObj.End
+	}
+
+	return slice(array, sliceObj.Start, end)
+}
+
+func evalSliceExpression(start object.Object, end object.Object) object.Object {
+	switch {
+	case start == nil && end == nil:
+		return &object.Slice{Start: 0, End: nil}
+	case start == nil && end != nil && end.Type() == object.INTEGER:
+		return &object.Slice{Start: 0, End: &end.(*object.Integer).Value}
+	case start != nil && start.Type() == object.INTEGER && end == nil:
+		return &object.Slice{Start: start.(*object.Integer).Value, End: nil}
+	case start.Type() == object.INTEGER && end.Type() == object.INTEGER:
+		return &object.Slice{Start: start.(*object.Integer).Value, End: &end.(*object.Integer).Value}
+	}
+	return newError("slice operator not supported: %s:%s", start.Type(), end.Type())
 }
 
 func toBoolean(value bool) object.Object {

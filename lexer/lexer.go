@@ -21,6 +21,7 @@ var ops map[rune]token.Token = map[rune]token.Token{
 	'-': {Type: token.MINUS, Literal: "-"},
 	'/': {Type: token.SLASH, Literal: "/"},
 	'*': {Type: token.ASTERISK, Literal: "*"},
+	':': {Type: token.COLON, Literal: ":"},
 	'<': {Type: token.LT, Literal: "<"},
 	'>': {Type: token.GT, Literal: ">"},
 	',': {Type: token.COMMA, Literal: ","},

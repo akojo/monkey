@@ -19,6 +19,7 @@ const (
 	INTEGER  = "INTEGER"
 	NULL     = "NULL"
 	RETURN   = "RETURN"
+	SLICE    = "SLICE"
 	STRING   = "STRING"
 )
 
@@ -95,6 +96,14 @@ type Return struct {
 
 func (r *Return) Type() ObjectType { return RETURN }
 func (r *Return) Inspect() string  { return r.Value.Inspect() }
+
+type Slice struct {
+	Start int64
+	End   *int64
+}
+
+func (s *Slice) Type() ObjectType { return SLICE }
+func (s *Slice) Inspect() string  { return fmt.Sprintf("%d:%d", s.Start, *s.End) }
 
 type String struct {
 	Value string
