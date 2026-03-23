@@ -65,7 +65,7 @@ func builtin_slice(args ...object.Object) object.Object {
 	return slice(array, start.Value, end.Value)
 }
 
-func equals(left object.Object, right object.Object) bool {
+func equals(left, right object.Object) bool {
 	if left.Type() != right.Type() {
 		return false
 	}
@@ -83,7 +83,7 @@ func equals(left object.Object, right object.Object) bool {
 	return false
 }
 
-func arrayEquals(left *object.Array, right *object.Array) bool {
+func arrayEquals(left, right *object.Array) bool {
 	if len(left.Elements) != len(right.Elements) {
 		return false
 	}
@@ -94,6 +94,48 @@ func arrayEquals(left *object.Array, right *object.Array) bool {
 		}
 	}
 	return true
+}
+
+func add(left, right object.Object) object.Object {
+	if left.Type() != right.Type() {
+		return newError("type mismatch: %s + %s", left.Type(), right.Type())
+	}
+	switch left := left.(type) {
+	case *object.Boolean:
+		if left == TRUE || right == TRUE {
+			return TRUE
+		}
+		return FALSE
+	case *object.Integer:
+		return &object.Integer{Value: left.Value + right.(*object.Integer).Value}
+	case *object.String:
+		return &object.String{Value: left.Value + right.(*object.String).Value}
+	case *object.Array:
+		l := left.Elements
+		r := right.(*object.Array).Elements
+
+		result := &object.Array{Elements: make([]object.Object, len(l)+len(r))}
+		copy(result.Elements, l)
+		copy(result.Elements[len(l):], r)
+		return result
+	}
+	return newError("invalid types: %s + %s", left.Type(), right.Type())
+}
+
+func multiply(left, right object.Object) object.Object {
+	if left.Type() != right.Type() {
+		return newError("type mismatch: %s * %s", left.Type(), right.Type())
+	}
+	switch left := left.(type) {
+	case *object.Boolean:
+		if left == FALSE || right == FALSE {
+			return FALSE
+		}
+		return TRUE
+	case *object.Integer:
+		return &object.Integer{Value: left.Value * right.(*object.Integer).Value}
+	}
+	return newError("invalid types: %s * %s", left.Type(), right.Type())
 }
 
 func slice(array *object.Array, start int64, end int64) object.Object {
@@ -115,9 +157,7 @@ func slice(array *object.Array, start int64, end int64) object.Object {
 
 	newSlice := &object.Array{Elements: make([]object.Object, end-start)}
 
-	for i := range newSlice.Elements {
-		newSlice.Elements[i] = array.Elements[start+int64(i)]
-	}
+	copy(newSlice.Elements, array.Elements[start:end])
 
 	return newSlice
 }

@@ -32,8 +32,24 @@ func TestBooleanExpression(t *testing.T) {
 	expect(t, "false", false)
 	expect(t, "true == true", true)
 	expect(t, "false == false", true)
-	expect(t, "true != false", true)
+
+	// XOR
+	expect(t, "false != false", false)
 	expect(t, "false != true", true)
+	expect(t, "true != false", true)
+	expect(t, "true != true", false)
+
+	// OR
+	expect(t, "false + false", false)
+	expect(t, "false + true", true)
+	expect(t, "true + false", true)
+	expect(t, "true + true", true)
+
+	// AND
+	expect(t, "false * false", false)
+	expect(t, "false * true", false)
+	expect(t, "true * false", false)
+	expect(t, "true * true", true)
 
 	expect(t, "1 < 2", true)
 	expect(t, "1 > 2", false)
@@ -119,8 +135,6 @@ func TestErrorHandling(t *testing.T) {
 	expect(t, "5 + true;", errors.New("type mismatch: INTEGER + BOOLEAN"))
 	expect(t, "5 + true; 5", errors.New("type mismatch: INTEGER + BOOLEAN"))
 	expect(t, "-true", errors.New("unknown operator: -BOOLEAN"))
-	expect(t, "5; true + false; 5;", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
-	expect(t, "if (10 > 1) { true + false; }", errors.New("unknown operator: BOOLEAN + BOOLEAN"))
 	expect(t, "foo", errors.New("identifier not found: foo"))
 	expect(t, `"hello" - "world"`, errors.New("unknown operator: STRING - STRING"))
 }
@@ -240,6 +254,12 @@ func TestArraySlices(t *testing.T) {
 	expect(t, "let a = [1, 2, 3, 4][1:3]; a == [2, 3]", true)
 	expect(t, "let a = [1, 2, 3, 4][1:]; a == [2, 3, 4]", true)
 	expect(t, "let a = [1, 2, 3, 4][:2]; a == [1, 2]", true)
+}
+
+func TestArrayConcatenation(t *testing.T) {
+	expect(t, "[1, 2] + [3, 4] == [1, 2, 3, 4]", true)
+	expect(t, "[1, 2] + [] == [1, 2]", true)
+	expect(t, "[] + [] == []", true)
 }
 
 func eval(input string) object.Object {
