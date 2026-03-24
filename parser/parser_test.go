@@ -394,6 +394,108 @@ func TestSliceExpressions(t *testing.T) {
 	test("myarray[:]", nil, nil)
 }
 
+func TestHashLiteral(t *testing.T) {
+	program := makeProgram(t, `{"one": 1, "two": 2}`)
+
+	expectStatementCount(t, program.Statements, 1)
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("hash: expected *ast.HashLiteral, got %T", stmt.Expression)
+	}
+
+	if len(hash.Pairs) != 2 {
+		t.Errorf("hash.Pairs: expected 2, got %d", len(hash.Pairs))
+	}
+
+	expected := map[string]int64{
+		"one": 1,
+		"two": 2,
+	}
+
+	for key, value := range hash.Pairs {
+		literal, ok := key.(*ast.StringLiteral)
+		if !ok {
+			t.Errorf("key: expected *ast.StringLiteral, got %T", key)
+		}
+
+		expectValue := expected[literal.String()]
+		expectIntegerLiteral(t, value, expectValue)
+	}
+}
+
+func TestHashLiteralWithExpression(t *testing.T) {
+	program := makeProgram(t, `{"one": 0 + 1}`)
+
+	expectStatementCount(t, program.Statements, 1)
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("hash: expected *ast.HashLiteral, got %T", stmt.Expression)
+	}
+
+	if len(hash.Pairs) != 1 {
+		t.Errorf("hash.Pairs: expected 1, got %d", len(hash.Pairs))
+	}
+
+	for key, value := range hash.Pairs {
+		literal, ok := key.(*ast.StringLiteral)
+		if !ok {
+			t.Errorf("key: expected *ast.StringLiteral, got %T", key)
+		}
+		if literal.Value != "one" {
+			t.Errorf("literal.Value: expected \"one\", got %q", literal.Value)
+		}
+
+		expectInfixExpression(t, value, 0, "+", 1)
+	}
+}
+
+func TestHashLiteralWithSlice(t *testing.T) {
+	program := makeProgram(t, `{a[0:1]: 1, b[:1]: 1}`)
+
+	expectStatementCount(t, program.Statements, 1)
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("hash: expected *ast.HashLiteral, got %T", stmt.Expression)
+	}
+
+	if len(hash.Pairs) != 2 {
+		t.Errorf("hash.Pairs: expected 2, got %d", len(hash.Pairs))
+	}
+
+	for key, value := range hash.Pairs {
+		index, ok := key.(*ast.IndexExpression)
+		if !ok {
+			t.Errorf("key: expected *ast.IndexExpression, got %T", key)
+		}
+
+		_, ok = index.Index.(*ast.SliceExpression)
+		if !ok {
+			t.Errorf("key.Index: expected *ast.SliceExpression, got %T", key)
+		}
+
+		expectIntegerLiteral(t, value, 1)
+	}
+}
+
+func TestEmptyHashLiteral(t *testing.T) {
+	program := makeProgram(t, `{}`)
+
+	expectStatementCount(t, program.Statements, 1)
+	stmt := expectExpressionStatement(t, program.Statements[0])
+	hash, ok := stmt.Expression.(*ast.HashLiteral)
+	if !ok {
+		t.Fatalf("hash: expected *ast.HashLiteral, got %T", stmt.Expression)
+	}
+
+	if len(hash.Pairs) != 0 {
+		t.Errorf("hash.Pairs: expected 0, got %d", len(hash.Pairs))
+	}
+
+}
+
 func makeProgram(t *testing.T, input string) *ast.Program {
 	l := lexer.New(strings.NewReader(input), "<test>")
 	p := New(l)

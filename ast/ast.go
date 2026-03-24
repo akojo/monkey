@@ -284,6 +284,26 @@ func (se *SliceExpression) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s(%s:%s)", indent(level), se.Start.PrettyPrint(0), se.End.PrettyPrint(0))
 }
 
+type HashLiteral struct {
+	Token token.Token
+	Pairs map[Expression]Expression
+}
+
+func (hl *HashLiteral) expressionNode()      {}
+func (hl *HashLiteral) TokenLiteral() string { return hl.Token.Literal }
+func (hl *HashLiteral) String() string       { return hl.PrettyPrint(0) }
+func (hl *HashLiteral) PrettyPrint(level int) string {
+	var out bytes.Buffer
+
+	out.WriteString("{\n")
+	for k, v := range hl.Pairs {
+		fmt.Fprintf(&out, "%s%s: %s,\n", indent(level+1), k.String(), v.String())
+	}
+	out.WriteString(indent(level) + "}")
+
+	return out.String()
+}
+
 func indent(level int) string {
 	var out bytes.Buffer
 	for range level {

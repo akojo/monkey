@@ -28,7 +28,7 @@ type Parser struct {
 const (
 	_ int = iota
 	LOWEST
-	SLICE       // array[start:end]
+	COLON       // array[start:end], "foo": 1
 	EQUALS      // ==, !=
 	LESSGREATER // <, >
 	SUM         // +, -
@@ -39,7 +39,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
-	token.COLON:    SLICE,
+	token.COLON:    COLON,
 	token.EQ:       EQUALS,
 	token.NE:       EQUALS,
 	token.LT:       LESSGREATER,
@@ -68,6 +68,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.STRING, p.parseStringLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.COLON, p.parsePrefixSliceExpression)
+	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
@@ -454,6 +455,42 @@ func (p *Parser) parseIndexExpression(left ast.Expression) (ast.Expression, erro
 
 func (p *Parser) parsePrefixSliceExpression() (ast.Expression, error) {
 	return p.parseInfixSliceExpression(nil)
+}
+
+func (p *Parser) parseHashLiteral() (ast.Expression, error) {
+	hash := &ast.HashLiteral{Token: p.curToken, Pairs: make(map[ast.Expression]ast.Expression)}
+
+	for p.peekToken.Type != token.RBRACE {
+		p.nextToken()
+		key, err := p.parseExpression(COLON)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := p.expectPeek(token.COLON); err != nil {
+			return nil, err
+		}
+
+		p.nextToken()
+		value, err := p.parseExpression(LOWEST)
+		if err != nil {
+			return nil, err
+		}
+
+		hash.Pairs[key] = value
+
+		if p.peekToken.Type != token.RBRACE {
+			if err := p.expectPeek(token.COMMA); err != nil {
+				return nil, fmt.Errorf("hash: invalid token %s", p.peekToken)
+			}
+		}
+	}
+
+	if err := p.expectPeek(token.RBRACE); err != nil {
+		return nil, err
+	}
+
+	return hash, nil
 }
 
 func (p *Parser) parseInfixSliceExpression(start ast.Expression) (ast.Expression, error) {

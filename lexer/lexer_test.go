@@ -203,6 +203,24 @@ func TestArray(t *testing.T) {
 	testLexer(t, input, expectTokens)
 }
 
+func TestHash(t *testing.T) {
+	input := `{"foo": 1, "bar": 2}`
+
+	expectTokens := []expectToken{
+		{token.LBRACE, "{"},
+		{token.STRING, "foo"},
+		{token.COLON, ":"},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.STRING, "bar"},
+		{token.COLON, ":"},
+		{token.INT, "2"},
+		{token.RBRACE, "}"},
+	}
+
+	testLexer(t, input, expectTokens)
+}
+
 func testLexer(t *testing.T, input string, expectTokens []expectToken) {
 	l := New(strings.NewReader(input), "<test>")
 
