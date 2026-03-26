@@ -213,8 +213,9 @@ func TestBuiltinFunctions(t *testing.T) {
 	expect(t, "len([1, 2, 3])", 3)
 	expect(t, "len([])", 0)
 
-	expect(t, "let a = append([1, 2], 3); a[2]", 3)
-	expect(t, "let a = append([], [1]); a[0][0]", 1)
+	expect(t, "let a = append([1, 2], 3); a == [1, 2, 3]", true)
+	expect(t, "let a = append([], 1); a == [1]", true)
+	expect(t, "let a = append([], [1]); a == [[1]]", true)
 
 	expect(t, "equals(1, 1)", true)
 	expect(t, `equals("foo", "foo")`, true)
