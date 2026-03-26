@@ -137,6 +137,7 @@ func TestErrorHandling(t *testing.T) {
 	expect(t, "-true", errors.New("unknown operator: -BOOLEAN"))
 	expect(t, "foo", errors.New("identifier not found: foo"))
 	expect(t, `"hello" - "world"`, errors.New("unknown operator: STRING - STRING"))
+	expect(t, `{"name": "Monkey"}[fn(x) { x + 1 }]`, errors.New("cannot use as hash key: FUNCTION"))
 }
 
 func TestLetStatements(t *testing.T) {
@@ -262,6 +263,46 @@ func TestArrayConcatenation(t *testing.T) {
 	expect(t, "[] + [] == []", true)
 }
 
+func TestHashLiterals(t *testing.T) {
+	test := func(hash *object.Hash, key object.HashKey, value any) {
+		pair, ok := hash.Pairs[key]
+		if !ok {
+			t.Errorf("no pair for %v", key)
+		}
+		expectObject(t, pair.Value, value)
+	}
+
+	evaluated := eval(`
+	let two = "two";
+	{
+		"one": 10 - 9,
+		two: "two",
+		4: 4,
+		true: true,
+	}`)
+	hash, ok := evaluated.(*object.Hash)
+	if !ok {
+		t.Fatalf("result: expected *object.Hash, got %T (%+v)", evaluated, evaluated)
+	}
+	if len(hash.Pairs) != 4 {
+		t.Fatalf("hash.Pairs: expected 4, got %d", len(hash.Pairs))
+	}
+
+	test(hash, (&object.String{Value: "one"}).Hash(), 1)
+	test(hash, (&object.String{Value: "two"}).Hash(), "two")
+	test(hash, (&object.Integer{Value: 4}).Hash(), 4)
+	test(hash, (&object.Boolean{Value: true}).Hash(), true)
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	expect(t, `{"foo": 5}["foo"]`, 5)
+	expect(t, `{"foo": 5}["bar"]`, nil)
+	expect(t, `{}["foo"]`, nil)
+	expect(t, `{5: 10}[5]`, 10)
+	expect(t, `{true: 5}[true]`, 5)
+	expect(t, `{false: 5}[false]`, 5)
+}
+
 func eval(input string) object.Object {
 	p := parser.New(lexer.New(strings.NewReader(input), "<test>"))
 	program := p.ParseProgram()
@@ -275,7 +316,10 @@ func expect(t *testing.T, input string, expected any) {
 		t.Errorf("got unexpected nil")
 		return
 	}
+	expectObject(t, got, expected)
+}
 
+func expectObject(t *testing.T, got object.Object, expected any) {
 	switch e := expected.(type) {
 	case int:
 		expectIntegerObject(t, got, int64(e))

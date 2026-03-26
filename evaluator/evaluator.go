@@ -116,6 +116,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			}
 		}
 		return evalSliceExpression(start, end)
+	case *ast.HashLiteral:
+		return evalHashLiteral(node, env)
 	}
 	return nil
 }
@@ -289,6 +291,8 @@ func evalIndexExpression(left object.Object, index object.Object) object.Object 
 		array := left.(*object.Array)
 		slice := index.(*object.Slice)
 		return evalSliceIndexExpression(array, slice)
+	case left.Type() == object.HASH:
+		return evalHashIndexExpression(left, index)
 	}
 	return newError("index operator not supported: %s", left.Type())
 }
@@ -316,6 +320,48 @@ func evalSliceExpression(start object.Object, end object.Object) object.Object {
 		return &object.Slice{Start: start.(*object.Integer).Value, End: &end.(*object.Integer).Value}
 	}
 	return newError("slice operator not supported: %s:%s", start.Type(), end.Type())
+}
+
+func evalHashIndexExpression(hash, index object.Object) object.Object {
+	hashObject := hash.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return newError("cannot use as hash key: %s", index.Type())
+	}
+
+	pair, ok := hashObject.Pairs[key.Hash()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
+}
+
+func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for keyNode, valueNode := range node.Pairs {
+		key := Eval(keyNode, env)
+		if isError(key) {
+			return key
+		}
+
+		hashKey, ok := key.(object.Hashable)
+		if !ok {
+			return newError("cannot use as hash key: %s", key.Type())
+		}
+
+		value := Eval(valueNode, env)
+		if isError(value) {
+			return value
+		}
+
+		hashed := hashKey.Hash()
+		pairs[hashed] = object.HashPair{Key: key, Value: value}
+	}
+
+	return &object.Hash{Pairs: pairs}
 }
 
 func toBoolean(value bool) object.Object {

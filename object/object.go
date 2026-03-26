@@ -1,7 +1,9 @@
 package object
 
 import (
+	"bytes"
 	"fmt"
+	"hash/fnv"
 	"strconv"
 	"strings"
 
@@ -16,6 +18,7 @@ const (
 	BUILTIN  = "BUILTIN"
 	ERROR    = "ERROR"
 	FUNCTION = "FUNCTION"
+	HASH     = "HASH"
 	INTEGER  = "INTEGER"
 	NULL     = "NULL"
 	RETURN   = "RETURN"
@@ -26,6 +29,15 @@ const (
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+type Hashable interface {
+	Hash() HashKey
 }
 
 type Array struct {
@@ -47,6 +59,12 @@ type Boolean struct {
 
 func (b *Boolean) Type() ObjectType { return BOOLEAN }
 func (b *Boolean) Inspect() string  { return strconv.FormatBool(b.Value) }
+func (b *Boolean) Hash() HashKey {
+	if b.Value {
+		return HashKey{Type: BOOLEAN, Value: 1}
+	}
+	return HashKey{Type: BOOLEAN, Value: 0}
+}
 
 type BuiltinFunction func(args ...Object) Object
 type Builtin struct {
@@ -78,12 +96,40 @@ func (f *Function) Inspect() string {
 	return fmt.Sprintf("fn (%s) %s", strings.Join(params, ", "), f.Body.PrettyPrint(1))
 }
 
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return HASH }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	pairs := make([]string, 0)
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s", pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+
+	return out.String()
+}
+
 type Integer struct {
 	Value int64
 }
 
 func (i *Integer) Type() ObjectType { return INTEGER }
 func (i *Integer) Inspect() string  { return strconv.FormatInt(i.Value, 10) }
+func (i *Integer) Hash() HashKey {
+	return HashKey{Type: INTEGER, Value: uint64(i.Value)}
+}
 
 type Null struct{}
 
@@ -110,4 +156,9 @@ type String struct {
 }
 
 func (s *String) Type() ObjectType { return STRING }
-func (s *String) Inspect() string  { return s.Value }
+func (s *String) Inspect() string  { return fmt.Sprintf("%q", s.Value) }
+func (s *String) Hash() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Type: STRING, Value: h.Sum64()}
+}
