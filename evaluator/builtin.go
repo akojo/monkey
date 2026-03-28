@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/akojo/monkey/object"
@@ -63,6 +65,18 @@ func builtin_slice(args ...object.Object) object.Object {
 		newError("argument 2: got %s, want INTEGER", args[0].Type())
 	}
 	return slice(array, start.Value, end.Value)
+}
+
+func builtin_print(args ...object.Object) object.Object {
+	result := make([]string, 0)
+
+	for _, arg := range args {
+		result = append(result, arg.Inspect())
+	}
+	fmt.Print(strings.Join(result, " "))
+	fmt.Print("\n")
+
+	return NULL
 }
 
 func equals(left, right object.Object) bool {

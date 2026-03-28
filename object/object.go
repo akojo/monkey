@@ -93,7 +93,7 @@ func (f *Function) Inspect() string {
 	for _, param := range f.Parameters {
 		params = append(params, param.String())
 	}
-	return fmt.Sprintf("fn (%s) %s", strings.Join(params, ", "), f.Body.PrettyPrint(1))
+	return fmt.Sprintf("fn (%s) %s", strings.Join(params, ", "), f.Body.String())
 }
 
 type HashPair struct {
@@ -156,7 +156,7 @@ type String struct {
 }
 
 func (s *String) Type() ObjectType { return STRING }
-func (s *String) Inspect() string  { return fmt.Sprintf("%q", s.Value) }
+func (s *String) Inspect() string  { return s.Value }
 func (s *String) Hash() HashKey {
 	h := fnv.New64a()
 	h.Write([]byte(s.Value))

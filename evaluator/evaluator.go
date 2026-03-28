@@ -17,6 +17,7 @@ var builtins = map[string]*object.Builtin{
 	"append": {Fn: builtin_append},
 	"equals": {Fn: builtin_equals},
 	"len":    {Fn: builtin_len},
+	"print":  {Fn: builtin_print},
 	"slice":  {Fn: builtin_slice},
 }
 
