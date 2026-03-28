@@ -1,18 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"os/user"
 
 	"github.com/akojo/monkey/repl"
+	"golang.org/x/term"
 )
 
 func main() {
-	user, err := user.Current()
-	if err != nil {
-		panic(err)
+	if term.IsTerminal(int(os.Stdin.Fd())) {
+		repl.Start(os.Stdin, os.Stdout)
+	} else {
+		repl.Run(os.Stdin, "<stdin>")
 	}
-	fmt.Printf("Hello %s! This is the Monkey programming language!\n", user.Username)
-	repl.Start(os.Stdin, os.Stdout)
 }

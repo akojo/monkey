@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/akojo/monkey/evaluator"
@@ -15,6 +16,8 @@ import (
 const PROMPT = ">> "
 
 func Start(in io.Reader, out io.Writer) {
+	fmt.Print("monkey 1.7\n")
+
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
 
@@ -40,6 +43,18 @@ func Start(in io.Reader, out io.Writer) {
 			fmt.Fprintf(out, "%s\n", result.Inspect())
 		}
 	}
+}
+
+func Run(in io.Reader, filename string) {
+	p := parser.New(lexer.New(in, filename))
+
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		printParseErrors(os.Stderr, p.Errors())
+		return
+	}
+
+	evaluator.Eval(program, object.NewEnvironment())
 }
 
 func printParseErrors(out io.Writer, errors []error) {
