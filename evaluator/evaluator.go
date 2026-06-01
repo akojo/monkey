@@ -4,21 +4,16 @@ import (
 	"fmt"
 
 	"github.com/akojo/monkey/ast"
+	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/object"
 )
 
-var (
-	NULL  = &object.Null{}
-	TRUE  = &object.Boolean{Value: true}
-	FALSE = &object.Boolean{Value: false}
-)
-
 var builtins = map[string]*object.Builtin{
-	"append": {Fn: builtin_append},
-	"equals": {Fn: builtin_equals},
-	"len":    {Fn: builtin_len},
-	"print":  {Fn: builtin_print},
-	"slice":  {Fn: builtin_slice},
+	"append": {Fn: builtin.Append},
+	"equals": {Fn: builtin.Equals},
+	"len":    {Fn: builtin.Len},
+	"print":  {Fn: builtin.Print},
+	"slice":  {Fn: builtin.Slice},
 }
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
@@ -124,7 +119,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 }
 
 func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
-	var result object.Object = NULL
+	var result object.Object = builtin.NULL
 
 	for _, stmt := range stmts {
 		result = Eval(stmt, env)
@@ -141,7 +136,7 @@ func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
 }
 
 func evalBlockStatement(stmts []ast.Statement, env *object.Environment) object.Object {
-	var result object.Object = NULL
+	var result object.Object = builtin.NULL
 
 	for _, stmt := range stmts {
 		result = Eval(stmt, env)
@@ -181,13 +176,13 @@ func evalMinus(right object.Object) object.Object {
 func evalInfixExpression(op string, left object.Object, right object.Object) object.Object {
 	switch {
 	case op == "==":
-		return toBoolean(equals(left, right))
+		return toBoolean(builtin.Eq(left, right))
 	case op == "!=":
-		return toBoolean(!equals(left, right))
+		return toBoolean(!builtin.Eq(left, right))
 	case op == "+":
-		return add(left, right)
+		return builtin.Add(left, right)
 	case op == "*":
-		return multiply(left, right)
+		return builtin.Multiply(left, right)
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
 	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
@@ -223,7 +218,7 @@ func evalIfExpression(ie *ast.IFExpression, env *object.Environment) object.Obje
 	} else if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
 	} else {
-		return NULL
+		return builtin.NULL
 	}
 }
 
@@ -285,7 +280,7 @@ func evalIndexExpression(left object.Object, index object.Object) object.Object 
 		array := left.(*object.Array)
 		i := index.(*object.Integer).Value
 		if i < 0 || i > int64(len(array.Elements)-1) {
-			return NULL
+			return builtin.NULL
 		}
 		return array.Elements[i]
 	case left.Type() == object.ARRAY && index.Type() == object.SLICE:
@@ -306,7 +301,7 @@ func evalSliceIndexExpression(array *object.Array, sliceObj *object.Slice) objec
 		end = *sliceObj.End
 	}
 
-	return slice(array, sliceObj.Start, end)
+	return builtin.SliceArray(array, sliceObj.Start, end)
 }
 
 func evalSliceExpression(start object.Object, end object.Object) object.Object {
@@ -333,7 +328,7 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 
 	pair, ok := hashObject.Pairs[key.Hash()]
 	if !ok {
-		return NULL
+		return builtin.NULL
 	}
 
 	return pair.Value
@@ -367,13 +362,13 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 
 func toBoolean(value bool) object.Object {
 	if value {
-		return TRUE
+		return builtin.TRUE
 	}
-	return FALSE
+	return builtin.FALSE
 }
 
 func isTruthy(obj object.Object) bool {
-	if obj == FALSE || obj == NULL {
+	if obj == builtin.FALSE || obj == builtin.NULL {
 		return false
 	}
 	return true

@@ -1,4 +1,4 @@
-package evaluator
+package builtin
 
 import (
 	"fmt"
@@ -8,7 +8,13 @@ import (
 	"github.com/akojo/monkey/object"
 )
 
-func builtin_len(args ...object.Object) object.Object {
+var (
+	NULL  = &object.Null{}
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
+)
+
+func Len(args ...object.Object) object.Object {
 	if err := argCheck(1, args); err != nil {
 		return err
 	}
@@ -23,7 +29,7 @@ func builtin_len(args ...object.Object) object.Object {
 	return newError("argument to `len` not supported, got %s", args[0].Type())
 }
 
-func builtin_append(args ...object.Object) object.Object {
+func Append(args ...object.Object) object.Object {
 	if err := argCheck(2, args); err != nil {
 		return err
 	}
@@ -41,14 +47,14 @@ func builtin_append(args ...object.Object) object.Object {
 	return &object.Array{Elements: newElements}
 }
 
-func builtin_equals(args ...object.Object) object.Object {
+func Equals(args ...object.Object) object.Object {
 	if err := argCheck(2, args); err != nil {
 		return err
 	}
-	return toBoolean(equals(args[0], args[1]))
+	return toBoolean(Eq(args[0], args[1]))
 }
 
-func builtin_slice(args ...object.Object) object.Object {
+func Slice(args ...object.Object) object.Object {
 	if err := argCheck(3, args); err != nil {
 		return err
 	}
@@ -64,10 +70,10 @@ func builtin_slice(args ...object.Object) object.Object {
 	if !ok {
 		newError("argument 2: got %s, want INTEGER", args[0].Type())
 	}
-	return slice(array, start.Value, end.Value)
+	return SliceArray(array, start.Value, end.Value)
 }
 
-func builtin_print(args ...object.Object) object.Object {
+func Print(args ...object.Object) object.Object {
 	result := make([]string, 0)
 
 	for _, arg := range args {
@@ -79,7 +85,7 @@ func builtin_print(args ...object.Object) object.Object {
 	return NULL
 }
 
-func equals(left, right object.Object) bool {
+func Eq(left, right object.Object) bool {
 	if left.Type() != right.Type() {
 		return false
 	}
@@ -103,14 +109,14 @@ func arrayEquals(left, right *object.Array) bool {
 	}
 
 	for i := range left.Elements {
-		if !equals(left.Elements[i], right.Elements[i]) {
+		if !Eq(left.Elements[i], right.Elements[i]) {
 			return false
 		}
 	}
 	return true
 }
 
-func add(left, right object.Object) object.Object {
+func Add(left, right object.Object) object.Object {
 	if left.Type() != right.Type() {
 		return newError("type mismatch: %s + %s", left.Type(), right.Type())
 	}
@@ -136,7 +142,7 @@ func add(left, right object.Object) object.Object {
 	return newError("invalid types: %s + %s", left.Type(), right.Type())
 }
 
-func multiply(left, right object.Object) object.Object {
+func Multiply(left, right object.Object) object.Object {
 	if left.Type() != right.Type() {
 		return newError("type mismatch: %s * %s", left.Type(), right.Type())
 	}
@@ -152,7 +158,7 @@ func multiply(left, right object.Object) object.Object {
 	return newError("invalid types: %s * %s", left.Type(), right.Type())
 }
 
-func slice(array *object.Array, start int64, end int64) object.Object {
+func SliceArray(array *object.Array, start int64, end int64) object.Object {
 	if start < 0 {
 		start = 0
 	}
@@ -181,4 +187,15 @@ func argCheck(want int, args []object.Object) object.Object {
 		return newError("wrong number of arguments: got %d, want %d", len(args), want)
 	}
 	return nil
+}
+
+func toBoolean(value bool) object.Object {
+	if value {
+		return TRUE
+	}
+	return FALSE
+}
+
+func newError(format string, a ...any) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
