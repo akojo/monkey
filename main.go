@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -8,27 +9,38 @@ import (
 	"golang.org/x/term"
 )
 
+var useEvaluator = flag.Bool("interp", false, "Use direct evaluation instead of bytecode compiler\n")
+
 func main() {
-	if len(os.Args) > 2 {
-		fmt.Fprintf(os.Stderr, "Usage: monkey [file | -]\n")
+	flag.Usage = func() {
+		out := flag.CommandLine.Output()
+		fmt.Fprint(out, "Usage: monkey [option]... [file | -]\n")
+		fmt.Fprint(out, "Options:\n")
+		flag.PrintDefaults()
+	}
+
+	flag.Parse()
+
+	if len(flag.Args()) > 2 {
+		flag.Usage()
 		os.Exit(1)
 	}
 
-	if len(os.Args) == 2 {
-		runFile(os.Args[1])
+	if len(flag.Args()) == 2 {
+		runFile(flag.Args()[1])
 		return
 	}
 
 	if term.IsTerminal(int(os.Stdin.Fd())) {
-		repl.Start(os.Stdin, os.Stdout)
+		repl.Start(os.Stdin, *useEvaluator)
 	} else {
-		repl.Run(os.Stdin, "<stdin>")
+		runFile("-")
 	}
 }
 
 func runFile(filename string) {
 	if filename == "-" {
-		repl.Run(os.Stdin, "<stdin>")
+		repl.Run(os.Stdin, "<stdin>", *useEvaluator)
 		return
 	}
 
@@ -38,5 +50,5 @@ func runFile(filename string) {
 		os.Exit(1)
 	}
 
-	repl.Run(file, filename)
+	repl.Run(file, filename, *useEvaluator)
 }
