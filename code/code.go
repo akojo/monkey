@@ -12,7 +12,11 @@ type Opcode byte
 
 const (
 	OpConstant Opcode = iota
+
 	OpAdd
+	OpSub
+	OpMul
+	OpDiv
 
 	OpPop
 )
@@ -23,8 +27,12 @@ type Definition struct {
 }
 
 var definitions = map[Opcode]*Definition{
-	OpConstant: {"PUSH", []int{2}}, // load immediate
-	OpAdd:      {"ADD", []int{}},
+	OpConstant: {"PUSH", []int{2}}, // push a constant
+
+	OpAdd: {"ADD", []int{}},
+	OpSub: {"SUB", []int{}},
+	OpMul: {"MUL", []int{}},
+	OpDiv: {"DIV", []int{}},
 
 	OpPop: {"POP", []int{}},
 }

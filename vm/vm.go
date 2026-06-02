@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"errors"
+
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/lib"
@@ -46,11 +48,16 @@ func (vm *VM) Run() error {
 			ip += 2
 
 			vm.push(vm.constants[idx])
-		case code.OpAdd:
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			left, right := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
+			result := executeBinaryOp(op, left, right)
+			if result.Type() == object.ERROR {
+				return errors.New(result.(*object.Error).Message)
+			}
+
 			vm.sp--
-			vm.stack[vm.sp-1] = lib.Add(left, right)
+			vm.stack[vm.sp-1] = result
 		case code.OpPop:
 			vm.sp--
 		}
@@ -68,4 +75,38 @@ func (vm *VM) push(obj object.Object) {
 
 	vm.stack[vm.sp] = obj
 	vm.sp++
+}
+
+func executeBinaryOp(op code.Opcode, left, right object.Object) object.Object {
+	switch {
+	case op == code.OpAdd:
+		return lib.Add(left, right)
+	case op == code.OpMul:
+		return lib.Multiply(left, right)
+	case left.Type() != right.Type():
+		return lib.Error("type mismatch: %s %d %s", left.Type(), op, right.Type())
+	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
+		leftInt := left.(*object.Integer)
+		rightInt := right.(*object.Integer)
+		return executeIntegerOp(op, leftInt, rightInt)
+	}
+	return lib.Error("unknown operator: %s %s %s", left.Type(), fmtOp(op), right.Type())
+}
+
+func executeIntegerOp(op code.Opcode, left, right *object.Integer) object.Object {
+	switch op {
+	case code.OpSub:
+		return &object.Integer{Value: left.Value - right.Value}
+	case code.OpDiv:
+		return &object.Integer{Value: left.Value / right.Value}
+	}
+	return lib.Error("unknown operator: %s %s %s", left.Type(), fmtOp(op), right.Type())
+}
+
+func fmtOp(op code.Opcode) string {
+	def, err := code.Lookup(byte(op))
+	if err != nil {
+		return "<unknown>"
+	}
+	return def.Name
 }

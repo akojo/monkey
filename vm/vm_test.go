@@ -13,12 +13,18 @@ import (
 )
 
 func TestIntegerArithmetic(t *testing.T) {
-	runVmTest(t, "1", 1)
-	runVmTest(t, "2", 2)
-	runVmTest(t, "1 + 2", 3)
+	expect(t, "5", 5)
+	expect(t, "100", 100)
+	expect(t, "5 + 5 + 5", 15)
+	expect(t, "2 * 2 * 2 * 2 * 2", 32)
+	expect(t, "5 * 2 + 10", 20)
+	expect(t, "50 / 2 * 2 + 10", 60)
+	expect(t, "2 * (5 + 10)", 30)
+	expect(t, "3 * 3 * 3 + 10", 37)
+	expect(t, "3 * (3 * 3) + 10", 37)
 }
 
-func runVmTest(t *testing.T, input string, expected any) {
+func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 
 	program := parse(input)
