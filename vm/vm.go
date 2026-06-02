@@ -106,13 +106,13 @@ func executeBinaryOp(op code.Opcode, left, right object.Object) object.Object {
 	case op == code.OpMul:
 		return lib.Multiply(left, right)
 	case left.Type() != right.Type():
-		return lib.Error("type mismatch: %s %d %s", left.Type(), op, right.Type())
+		return lib.Error("%s: type mismatch: %s %s", fmtOp(op), left.Type(), right.Type())
 	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
 		leftInt := left.(*object.Integer)
 		rightInt := right.(*object.Integer)
 		return executeIntegerOp(op, leftInt, rightInt)
 	}
-	return lib.Error("unknown operator: %s %s %s", left.Type(), fmtOp(op), right.Type())
+	return lib.Error("unknown op: %s %s %s", left.Type(), fmtOp(op), right.Type())
 }
 
 func executeIntegerOp(op code.Opcode, left, right *object.Integer) object.Object {

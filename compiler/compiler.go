@@ -87,6 +87,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
+	default:
+		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}
 	return nil
 }
