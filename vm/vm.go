@@ -1,9 +1,9 @@
 package vm
 
 import (
-	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/compiler"
+	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 )
 
@@ -50,7 +50,7 @@ func (vm *VM) Run() error {
 			left, right := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
 			vm.sp--
-			vm.stack[vm.sp-1] = builtin.Add(left, right)
+			vm.stack[vm.sp-1] = lib.Add(left, right)
 		case code.OpPop:
 			vm.sp--
 		}

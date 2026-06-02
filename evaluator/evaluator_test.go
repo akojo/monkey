@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/lexer"
+	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
 )
@@ -384,7 +384,7 @@ func expectErrorObject(t *testing.T, obj object.Object, expected string) {
 }
 
 func expectNullObject(t *testing.T, obj object.Object) {
-	if obj != builtin.NULL {
+	if obj != lib.NULL {
 		t.Errorf("expected NULL, got %q", obj.Inspect())
 	}
 }

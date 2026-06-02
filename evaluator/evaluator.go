@@ -1,10 +1,9 @@
 package evaluator
 
 import (
-	"fmt"
-
 	"github.com/akojo/monkey/ast"
 	"github.com/akojo/monkey/builtin"
+	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 )
 
@@ -40,7 +39,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 	// Expressions
 	case *ast.Boolean:
-		return toBoolean(node.Value)
+		return lib.Boolean(node.Value)
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.StringLiteral:
@@ -119,7 +118,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 }
 
 func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
-	var result object.Object = builtin.NULL
+	var result object.Object = lib.NULL
 
 	for _, stmt := range stmts {
 		result = Eval(stmt, env)
@@ -136,7 +135,7 @@ func evalProgram(stmts []ast.Statement, env *object.Environment) object.Object {
 }
 
 func evalBlockStatement(stmts []ast.Statement, env *object.Environment) object.Object {
-	var result object.Object = builtin.NULL
+	var result object.Object = lib.NULL
 
 	for _, stmt := range stmts {
 		result = Eval(stmt, env)
@@ -156,17 +155,17 @@ func evalPrefixExpression(op string, right object.Object) object.Object {
 	case "-":
 		return evalMinus(right)
 	default:
-		return newError("unknown operator: %s%s", op, right.Type())
+		return lib.Error("unknown operator: %s%s", op, right.Type())
 	}
 }
 
 func evalBang(right object.Object) object.Object {
-	return toBoolean(!isTruthy(right))
+	return lib.Boolean(!isTruthy(right))
 }
 
 func evalMinus(right object.Object) object.Object {
 	if right.Type() != object.INTEGER {
-		return newError("unknown operator: -%s", right.Type())
+		return lib.Error("unknown operator: -%s", right.Type())
 	}
 
 	value := right.(*object.Integer).Value
@@ -176,21 +175,21 @@ func evalMinus(right object.Object) object.Object {
 func evalInfixExpression(op string, left object.Object, right object.Object) object.Object {
 	switch {
 	case op == "==":
-		return toBoolean(builtin.Eq(left, right))
+		return lib.Boolean(lib.Equals(left, right))
 	case op == "!=":
-		return toBoolean(!builtin.Eq(left, right))
+		return lib.Boolean(!lib.Equals(left, right))
 	case op == "+":
-		return builtin.Add(left, right)
+		return lib.Add(left, right)
 	case op == "*":
-		return builtin.Multiply(left, right)
+		return lib.Multiply(left, right)
 	case left.Type() != right.Type():
-		return newError("type mismatch: %s %s %s", left.Type(), op, right.Type())
+		return lib.Error("type mismatch: %s %s %s", left.Type(), op, right.Type())
 	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
 		leftInt := left.(*object.Integer)
 		rightInt := right.(*object.Integer)
 		return evalIntegerInfixExpression(op, leftInt, rightInt)
 	}
-	return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+	return lib.Error("unknown operator: %s %s %s", left.Type(), op, right.Type())
 }
 
 func evalIntegerInfixExpression(op string, left *object.Integer, right *object.Integer) object.Object {
@@ -200,11 +199,11 @@ func evalIntegerInfixExpression(op string, left *object.Integer, right *object.I
 	case "/":
 		return &object.Integer{Value: left.Value / right.Value}
 	case "<":
-		return toBoolean(left.Value < right.Value)
+		return lib.Boolean(left.Value < right.Value)
 	case ">":
-		return toBoolean(left.Value > right.Value)
+		return lib.Boolean(left.Value > right.Value)
 	}
-	return newError("unknown operator: %s %s %s", left.Type(), op, right.Type())
+	return lib.Error("unknown operator: %s %s %s", left.Type(), op, right.Type())
 }
 
 func evalIfExpression(ie *ast.IFExpression, env *object.Environment) object.Object {
@@ -218,7 +217,7 @@ func evalIfExpression(ie *ast.IFExpression, env *object.Environment) object.Obje
 	} else if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
 	} else {
-		return builtin.NULL
+		return lib.NULL
 	}
 }
 
@@ -229,7 +228,7 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 	if builtin, ok := builtins[node.Value]; ok {
 		return builtin
 	}
-	return newError("identifier not found: %s", node.Value)
+	return lib.Error("identifier not found: %s", node.Value)
 }
 
 func evalExpressions(exps []ast.Expression, env *object.Environment) []object.Object {
@@ -254,7 +253,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	case *object.Builtin:
 		return fn.Fn(args...)
 	}
-	return newError("not a function: %s", fn.Type())
+	return lib.Error("not a function: %s", fn.Type())
 }
 
 func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
@@ -280,7 +279,7 @@ func evalIndexExpression(left object.Object, index object.Object) object.Object 
 		array := left.(*object.Array)
 		i := index.(*object.Integer).Value
 		if i < 0 || i > int64(len(array.Elements)-1) {
-			return builtin.NULL
+			return lib.NULL
 		}
 		return array.Elements[i]
 	case left.Type() == object.ARRAY && index.Type() == object.SLICE:
@@ -290,7 +289,7 @@ func evalIndexExpression(left object.Object, index object.Object) object.Object 
 	case left.Type() == object.HASH:
 		return evalHashIndexExpression(left, index)
 	}
-	return newError("index operator not supported: %s", left.Type())
+	return lib.Error("index operator not supported: %s", left.Type())
 }
 
 func evalSliceIndexExpression(array *object.Array, sliceObj *object.Slice) object.Object {
@@ -301,7 +300,7 @@ func evalSliceIndexExpression(array *object.Array, sliceObj *object.Slice) objec
 		end = *sliceObj.End
 	}
 
-	return builtin.SliceArray(array, sliceObj.Start, end)
+	return lib.SliceArray(array, sliceObj.Start, end)
 }
 
 func evalSliceExpression(start object.Object, end object.Object) object.Object {
@@ -315,7 +314,7 @@ func evalSliceExpression(start object.Object, end object.Object) object.Object {
 	case start.Type() == object.INTEGER && end.Type() == object.INTEGER:
 		return &object.Slice{Start: start.(*object.Integer).Value, End: &end.(*object.Integer).Value}
 	}
-	return newError("slice operator not supported: %s:%s", start.Type(), end.Type())
+	return lib.Error("slice operator not supported: %s:%s", start.Type(), end.Type())
 }
 
 func evalHashIndexExpression(hash, index object.Object) object.Object {
@@ -323,12 +322,12 @@ func evalHashIndexExpression(hash, index object.Object) object.Object {
 
 	key, ok := index.(object.Hashable)
 	if !ok {
-		return newError("cannot use as hash key: %s", index.Type())
+		return lib.Error("cannot use as hash key: %s", index.Type())
 	}
 
 	pair, ok := hashObject.Pairs[key.Hash()]
 	if !ok {
-		return builtin.NULL
+		return lib.NULL
 	}
 
 	return pair.Value
@@ -345,7 +344,7 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return newError("cannot use as hash key: %s", key.Type())
+			return lib.Error("cannot use as hash key: %s", key.Type())
 		}
 
 		value := Eval(valueNode, env)
@@ -360,15 +359,8 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 	return &object.Hash{Pairs: pairs}
 }
 
-func toBoolean(value bool) object.Object {
-	if value {
-		return builtin.TRUE
-	}
-	return builtin.FALSE
-}
-
 func isTruthy(obj object.Object) bool {
-	if obj == builtin.FALSE || obj == builtin.NULL {
+	if obj == lib.FALSE || obj == lib.NULL {
 		return false
 	}
 	return true
@@ -380,8 +372,4 @@ func isError(obj object.Object) bool {
 
 func isReturn(obj object.Object) bool {
 	return obj != nil && obj.Type() == object.RETURN
-}
-
-func newError(format string, a ...any) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
