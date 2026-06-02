@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/object"
@@ -31,6 +32,10 @@ func (vm *VM) StackTop() object.Object {
 	return vm.stack[vm.sp-1]
 }
 
+func (vm *VM) StackAboveTop() object.Object {
+	return vm.stack[vm.sp]
+}
+
 func (vm *VM) Run() error {
 	for ip := 0; ip < len(vm.instructions); ip++ {
 		op := code.Opcode(vm.instructions[ip])
@@ -42,12 +47,12 @@ func (vm *VM) Run() error {
 
 			vm.push(vm.constants[idx])
 		case code.OpAdd:
-			right := vm.pop()
-			left := vm.pop()
-			rightValue := right.(*object.Integer).Value
-			leftValue := left.(*object.Integer).Value
+			left, right := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
-			vm.push(&object.Integer{Value: rightValue + leftValue})
+			vm.sp--
+			vm.stack[vm.sp-1] = builtin.Add(left, right)
+		case code.OpPop:
+			vm.sp--
 		}
 	}
 	return nil
@@ -63,10 +68,4 @@ func (vm *VM) push(obj object.Object) {
 
 	vm.stack[vm.sp] = obj
 	vm.sp++
-}
-
-func (vm *VM) pop() object.Object {
-	obj := vm.stack[vm.sp-1]
-	vm.sp--
-	return obj
 }

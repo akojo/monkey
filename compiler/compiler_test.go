@@ -28,6 +28,17 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpConstant, 0),
 				code.Make(code.OpConstant, 1),
 				code.Make(code.OpAdd),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "1; 2",
+			expectConstants: []any{1, 2},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpPop),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpPop),
 			),
 		},
 	}
@@ -63,12 +74,12 @@ func runCompilerTest(t *testing.T, test compilerTestCase) {
 
 func testInstructions(expected code.Instructions, actual code.Instructions) error {
 	if len(expected) != len(actual) {
-		return fmt.Errorf("len(instructions):\nwant %d (%q)\ngot  %d (%q)", len(expected), expected, len(actual), actual)
+		return fmt.Errorf("instructions:\n  want %d  %q\n  got  %d  %q", len(expected), expected, len(actual), actual)
 	}
 
 	for i, ins := range expected {
 		if actual[i] != ins {
-			return fmt.Errorf("wrong instruction at %d:\nwant %q\ngot  %q", i, ins, actual[i])
+			return fmt.Errorf("wrong instruction at %d:\n  want %q\n  got  %q", i, ins, actual[i])
 		}
 	}
 
@@ -77,7 +88,7 @@ func testInstructions(expected code.Instructions, actual code.Instructions) erro
 
 func testConstants(expected []any, actual []object.Object) error {
 	if len(expected) != len(actual) {
-		return fmt.Errorf("len(constants):\nwant %d (%q)\ngot  %d (%q)", len(expected), expected, len(actual), actual)
+		return fmt.Errorf("constants:\n  want %d  %q\n  got  %d  %q", len(expected), expected, len(actual), actual)
 	}
 
 	for i, c := range expected {

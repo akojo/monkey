@@ -33,8 +33,8 @@ func TestMake(t *testing.T) {
 func TestInstructionsString(t *testing.T) {
 	instructions := Instructions(slices.Concat(Make(OpConstant, 1), Make(OpConstant, 2), Make(OpAdd)))
 
-	expected := `0000 PUSHI 1
-0003 PUSHI 2
+	expected := `0000 PUSH 1
+0003 PUSH 2
 0006 ADD
 `
 

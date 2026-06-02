@@ -69,7 +69,7 @@ func run(in io.Reader, filename string, env *object.Environment, useEvaluator bo
 		return nil
 	}
 
-	return machine.StackTop()
+	return machine.StackAboveTop()
 }
 
 func printParseErrors(out io.Writer, errors []error) {

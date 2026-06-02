@@ -35,7 +35,7 @@ func runVmTest(t *testing.T, input string, expected any) {
 		t.Fatalf("vm error: %s", err)
 	}
 
-	if err := testExpectedObject(t, expected, vm.StackTop()); err != nil {
+	if err := testExpectedObject(expected, vm.StackAboveTop()); err != nil {
 		t.Errorf("%q: %s", input, err)
 	}
 }
@@ -46,7 +46,7 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
-func testExpectedObject(t *testing.T, expected any, actual object.Object) error {
+func testExpectedObject(expected any, actual object.Object) error {
 	var err error
 	switch expected := expected.(type) {
 	case int:
