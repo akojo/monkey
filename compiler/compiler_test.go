@@ -96,6 +96,66 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpPop),
 			),
 		},
+		{
+			input:           "1 < 2",
+			expectConstants: []any{1, 2},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpLessThan),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "1 > 2",
+			expectConstants: []any{2, 1},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpLessThan),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "1 == 2",
+			expectConstants: []any{1, 2},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpEqual),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "1 != 2",
+			expectConstants: []any{1, 2},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "true == false",
+			expectConstants: []any{},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpTrue),
+				code.Make(code.OpFalse),
+				code.Make(code.OpEqual),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "true != false",
+			expectConstants: []any{},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpTrue),
+				code.Make(code.OpFalse),
+				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			),
+		},
 	}
 
 	for _, test := range tests {

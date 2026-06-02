@@ -36,17 +36,23 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpPop)
 	case *ast.InfixExpression:
-		err := c.Compile(node.Left)
-		if err != nil {
-			return err
+		var err error
+		if node.Operator == ">" {
+			err = c.CompileN(node.Right, node.Left)
+		} else {
+			err = c.CompileN(node.Left, node.Right)
 		}
-
-		err = c.Compile(node.Right)
 		if err != nil {
 			return err
 		}
 
 		switch node.Operator {
+		case "<", ">":
+			c.emit(code.OpLessThan)
+		case "==":
+			c.emit(code.OpEqual)
+		case "!=":
+			c.emit(code.OpNotEqual)
 		case "+":
 			c.emit(code.OpAdd)
 		case "-":
@@ -67,6 +73,16 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
+	}
+	return nil
+}
+
+func (c *Compiler) CompileN(nodes ...ast.Node) error {
+	for _, node := range nodes {
+		err := c.Compile(node)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

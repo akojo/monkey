@@ -53,7 +53,9 @@ func (vm *VM) Run() error {
 			vm.push(lib.FALSE)
 		case code.OpTrue:
 			vm.push(lib.TRUE)
-		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
+		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv,
+			code.OpEqual, code.OpNotEqual, code.OpLessThan:
+
 			left, right := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
 			result := executeBinaryOp(op, left, right)
@@ -86,6 +88,10 @@ func (vm *VM) push(obj object.Object) {
 
 func executeBinaryOp(op code.Opcode, left, right object.Object) object.Object {
 	switch {
+	case op == code.OpEqual:
+		return lib.Boolean(lib.Equals(left, right))
+	case op == code.OpNotEqual:
+		return lib.Boolean(!lib.Equals(left, right))
 	case op == code.OpAdd:
 		return lib.Add(left, right)
 	case op == code.OpMul:
@@ -106,6 +112,8 @@ func executeIntegerOp(op code.Opcode, left, right *object.Integer) object.Object
 		return &object.Integer{Value: left.Value - right.Value}
 	case code.OpDiv:
 		return &object.Integer{Value: left.Value / right.Value}
+	case code.OpLessThan:
+		return lib.Boolean(left.Value < right.Value)
 	}
 	return lib.Error("unknown operator: %s %s %s", left.Type(), fmtOp(op), right.Type())
 }

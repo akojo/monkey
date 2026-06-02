@@ -27,6 +27,35 @@ func TestIntegerArithmetic(t *testing.T) {
 func TestBooleanExpressions(t *testing.T) {
 	expect(t, "true", true)
 	expect(t, "false", false)
+	expect(t, "true == true", true)
+	expect(t, "false == false", true)
+
+	// XOR
+	expect(t, "false != false", false)
+	expect(t, "false != true", true)
+	expect(t, "true != false", true)
+	expect(t, "true != true", false)
+
+	// OR
+	expect(t, "false + false", false)
+	expect(t, "false + true", true)
+	expect(t, "true + false", true)
+	expect(t, "true + true", true)
+
+	// AND
+	expect(t, "false * false", false)
+	expect(t, "false * true", false)
+	expect(t, "true * false", false)
+	expect(t, "true * true", true)
+
+	expect(t, "1 < 2", true)
+	expect(t, "1 > 2", false)
+	expect(t, "1 < 1", false)
+	expect(t, "1 > 1", false)
+	expect(t, "1 == 1", true)
+	expect(t, "1 != 1", false)
+	expect(t, "1 == 2", false)
+	expect(t, "1 != 2", true)
 }
 
 func expect(t *testing.T, input string, expected any) {
