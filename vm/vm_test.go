@@ -24,6 +24,11 @@ func TestIntegerArithmetic(t *testing.T) {
 	expect(t, "3 * (3 * 3) + 10", 37)
 }
 
+func TestBooleanExpressions(t *testing.T) {
+	expect(t, "true", true)
+	expect(t, "false", false)
+}
+
 func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 
@@ -57,6 +62,10 @@ func testExpectedObject(expected any, actual object.Object) error {
 	switch expected := expected.(type) {
 	case int:
 		err = testIntegerObject(int64(expected), actual)
+	case bool:
+		err = testBooleanObject(bool(expected), actual)
+	default:
+		return fmt.Errorf("unsupported type %T", expected)
 	}
 	return err
 }
@@ -69,6 +78,19 @@ func testIntegerObject(expected int64, actual object.Object) error {
 
 	if expected != result.Value {
 		return fmt.Errorf("want %d, got %d", expected, result.Value)
+	}
+
+	return nil
+}
+
+func testBooleanObject(expected bool, actual object.Object) error {
+	result, ok := actual.(*object.Boolean)
+	if !ok {
+		return fmt.Errorf("want Boolean, got %T (%+v)", actual, actual)
+	}
+
+	if expected != result.Value {
+		return fmt.Errorf("want %t, got %t", expected, result.Value)
 	}
 
 	return nil

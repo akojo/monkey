@@ -78,6 +78,31 @@ func TestIntegerArithmetic(t *testing.T) {
 	}
 }
 
+func TestBooleanExpressions(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input:           "false",
+			expectConstants: []any{},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpFalse),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "true",
+			expectConstants: []any{},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpTrue),
+				code.Make(code.OpPop),
+			),
+		},
+	}
+
+	for _, test := range tests {
+		runCompilerTest(t, test)
+	}
+}
+
 func runCompilerTest(t *testing.T, test compilerTestCase) {
 	t.Helper()
 

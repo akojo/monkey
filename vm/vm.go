@@ -2,6 +2,7 @@ package vm
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/compiler"
@@ -48,6 +49,10 @@ func (vm *VM) Run() error {
 			ip += 2
 
 			vm.push(vm.constants[idx])
+		case code.OpFalse:
+			vm.push(lib.FALSE)
+		case code.OpTrue:
+			vm.push(lib.TRUE)
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv:
 			left, right := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
@@ -60,6 +65,8 @@ func (vm *VM) Run() error {
 			vm.stack[vm.sp-1] = result
 		case code.OpPop:
 			vm.sp--
+		default:
+			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
 	}
 	return nil
