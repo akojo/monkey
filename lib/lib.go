@@ -109,6 +109,13 @@ func SliceArray(array *object.Array, start int64, end int64) object.Object {
 	return newSlice
 }
 
+func IsTruthy(obj object.Object) bool {
+	if obj == FALSE || obj == NULL {
+		return false
+	}
+	return true
+}
+
 func Boolean(value bool) object.Object {
 	if value {
 		return TRUE

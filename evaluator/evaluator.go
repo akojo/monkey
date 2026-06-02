@@ -160,7 +160,7 @@ func evalPrefixExpression(op string, right object.Object) object.Object {
 }
 
 func evalBang(right object.Object) object.Object {
-	return lib.Boolean(!isTruthy(right))
+	return lib.Boolean(!lib.IsTruthy(right))
 }
 
 func evalMinus(right object.Object) object.Object {
@@ -212,7 +212,7 @@ func evalIfExpression(ie *ast.IFExpression, env *object.Environment) object.Obje
 		return condition
 	}
 
-	if isTruthy(condition) {
+	if lib.IsTruthy(condition) {
 		return Eval(ie.Consequence, env)
 	} else if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
@@ -357,13 +357,6 @@ func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Obje
 	}
 
 	return &object.Hash{Pairs: pairs}
-}
-
-func isTruthy(obj object.Object) bool {
-	if obj == lib.FALSE || obj == lib.NULL {
-		return false
-	}
-	return true
 }
 
 func isError(obj object.Object) bool {

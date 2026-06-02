@@ -71,6 +71,15 @@ func TestIntegerArithmetic(t *testing.T) {
 				code.Make(code.OpPop),
 			),
 		},
+		{
+			input:           "-1",
+			expectConstants: []any{1},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpMinus),
+				code.Make(code.OpPop),
+			),
+		},
 	}
 
 	for _, test := range tests {
@@ -153,6 +162,15 @@ func TestBooleanExpressions(t *testing.T) {
 				code.Make(code.OpTrue),
 				code.Make(code.OpFalse),
 				code.Make(code.OpNotEqual),
+				code.Make(code.OpPop),
+			),
+		},
+		{
+			input:           "!true",
+			expectConstants: []any{},
+			expectInstructions: slices.Concat(
+				code.Make(code.OpTrue),
+				code.Make(code.OpBang),
 				code.Make(code.OpPop),
 			),
 		},
