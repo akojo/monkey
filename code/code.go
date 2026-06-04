@@ -75,22 +75,12 @@ func Make(op Opcode, operands ...int) []byte {
 		return []byte{}
 	}
 
-	instructionLen := 1
-	for _, w := range def.OperandWidths {
-		instructionLen += w
-	}
-
-	instruction := make([]byte, instructionLen)
-	instruction[0] = byte(op)
-
-	offset := 1
-	for i, o := range operands {
-		width := def.OperandWidths[i]
-		switch width {
+	instruction := []byte{byte(op)}
+	for i, operand := range operands {
+		switch def.OperandWidths[i] {
 		case 2:
-			binary.LittleEndian.PutUint16(instruction[offset:], uint16(o))
+			instruction = binary.NativeEndian.AppendUint16(instruction, uint16(operand))
 		}
-		offset += width
 	}
 
 	return instruction
@@ -126,7 +116,7 @@ func (ins Instructions) fmt() (string, int) {
 	case 0:
 		return def.Name, 0
 	case 1:
-		return fmt.Sprintf("%s %d", def.Name, operands[0]), read
+		return fmt.Sprintf("%s %04x", def.Name, operands[0]), read
 	}
 
 	return fmt.Sprintf("ERROR: %s: unhandled operand count %d", def.Name, operandCount), read
@@ -148,5 +138,5 @@ func ReadOperands(def *Definition, instructions Instructions) ([]int, int) {
 }
 
 func ReadUint16(ins Instructions) uint16 {
-	return binary.LittleEndian.Uint16(ins)
+	return binary.NativeEndian.Uint16(ins)
 }
