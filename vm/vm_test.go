@@ -8,6 +8,7 @@ import (
 	"github.com/akojo/monkey/ast"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/lexer"
+	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
 )
@@ -70,6 +71,19 @@ func TestBangOperator(t *testing.T) {
 	expect(t, "!!true", true)
 	expect(t, "!!false", false)
 	expect(t, "!!5", true)
+	expect(t, "!(if (false) {})", true)
+}
+
+func TestIfElseExpression(t *testing.T) {
+	expect(t, "if (true) { 10 }", 10)
+	expect(t, "if (false) { 10 }", nil)
+	expect(t, "if (1) { 10 }", 10)
+	expect(t, "if (1 < 2) { 10 }", 10)
+	expect(t, "if (1 > 2) { 10 }", nil)
+	expect(t, "if (1 < 2) { 10 } else { 20 }", 10)
+	expect(t, "if (1 > 2) { 10 } else { 20 }", 20)
+	expect(t, "if (if (false) {}) { 10 } else { 20 }", 20)
+	expect(t, "if (true) {}", nil)
 }
 
 func expect(t *testing.T, input string, expected any) {
@@ -89,7 +103,7 @@ func expect(t *testing.T, input string, expected any) {
 		t.Fatalf("vm error: %s", err)
 	}
 
-	if err := testExpectedObject(expected, vm.StackAboveTop()); err != nil {
+	if err := expectObject(expected, vm.StackAboveTop()); err != nil {
 		t.Errorf("%q: %s", input, err)
 	}
 }
@@ -100,20 +114,24 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
-func testExpectedObject(expected any, actual object.Object) error {
+func expectObject(expected any, actual object.Object) error {
 	var err error
 	switch expected := expected.(type) {
 	case int:
-		err = testIntegerObject(int64(expected), actual)
+		err = expectInteger(int64(expected), actual)
 	case bool:
-		err = testBooleanObject(bool(expected), actual)
+		err = expectBoolean(bool(expected), actual)
+	case nil:
+		if actual != lib.NULL {
+			return fmt.Errorf("expected NULL, got %q", actual)
+		}
 	default:
 		return fmt.Errorf("unsupported type %T", expected)
 	}
 	return err
 }
 
-func testIntegerObject(expected int64, actual object.Object) error {
+func expectInteger(expected int64, actual object.Object) error {
 	result, ok := actual.(*object.Integer)
 	if !ok {
 		return fmt.Errorf("want Integer, got %T (%+v)", actual, actual)
@@ -126,7 +144,7 @@ func testIntegerObject(expected int64, actual object.Object) error {
 	return nil
 }
 
-func testBooleanObject(expected bool, actual object.Object) error {
+func expectBoolean(expected bool, actual object.Object) error {
 	result, ok := actual.(*object.Boolean)
 	if !ok {
 		return fmt.Errorf("want Boolean, got %T (%+v)", actual, actual)

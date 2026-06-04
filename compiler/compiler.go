@@ -48,6 +48,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 		c.emit(code.OpPop)
 	case *ast.BlockStatement:
+		if len(node.Statements) == 0 {
+			c.emit(code.OpNull)
+		}
 		for _, s := range node.Statements {
 			err := c.Compile(s)
 			if err != nil {
@@ -112,39 +115,44 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		skipConsequence := c.emit(code.OpBranchNotEqual, INVALID_OFFSET)
+		jumpToElse := c.emit(code.OpBranchNotEqual, INVALID_OFFSET)
 
-		err = c.Compile(node.Consequence)
+		err = c.compileBlockExpression(node.Consequence)
 		if err != nil {
 			return err
 		}
 
-		// keep last value of consequence on the stack
-		if c.currentInstruction.Opcode == code.OpPop {
-			c.removeCurrent()
-		}
+		jumpToEnd := c.emit(code.OpBranch, INVALID_OFFSET)
+
+		c.replaceOperands(jumpToElse, len(c.instructions))
 
 		if node.Alternative == nil {
-			c.replaceOperands(skipConsequence, len(c.instructions))
+			c.emit(code.OpNull)
 		} else {
-			skipAlternative := c.emit(code.OpBranch, INVALID_OFFSET)
-
-			c.replaceOperands(skipConsequence, len(c.instructions))
-
-			err := c.Compile(node.Alternative)
+			err = c.compileBlockExpression(node.Alternative)
 			if err != nil {
 				return err
 			}
-
-			if c.currentInstruction.Opcode == code.OpPop {
-				c.removeCurrent()
-			}
-
-			c.replaceOperands(skipAlternative, len(c.instructions))
 		}
+
+		c.replaceOperands(jumpToEnd, len(c.instructions))
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}
+	return nil
+}
+
+func (c *Compiler) compileBlockExpression(stmt *ast.BlockStatement) error {
+	err := c.Compile(stmt)
+	if err != nil {
+		return err
+	}
+
+	// keep last value of block expression on the stack
+	if c.currentInstruction.Opcode == code.OpPop {
+		c.removeCurrent()
+	}
+
 	return nil
 }
 

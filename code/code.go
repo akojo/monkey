@@ -14,6 +14,8 @@ const (
 	OpConstant Opcode = iota
 	OpPop
 
+	OpNull
+
 	OpFalse
 	OpTrue
 
@@ -41,6 +43,8 @@ type Definition struct {
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"PUSH", []int{2}}, // push a constant
 	OpPop:      {"POP", []int{}},
+
+	OpNull: {"NULL", []int{}},
 
 	OpFalse: {"FALSE", []int{}},
 	OpTrue:  {"TRUE", []int{}},

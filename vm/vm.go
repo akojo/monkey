@@ -49,10 +49,24 @@ func (vm *VM) Run() error {
 			ip += 2
 
 			vm.push(vm.constants[idx])
+		case code.OpPop:
+			vm.sp--
+		case code.OpNull:
+			vm.push(lib.NULL)
 		case code.OpFalse:
 			vm.push(lib.FALSE)
 		case code.OpTrue:
 			vm.push(lib.TRUE)
+		case code.OpBranch:
+			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip = pos - 1
+		case code.OpBranchNotEqual:
+			if !lib.IsTruthy(vm.pop()) {
+				pos := int(code.ReadUint16(vm.instructions[ip+1:]))
+				ip = pos - 1
+			} else {
+				ip += 2
+			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv,
 			code.OpEqual, code.OpNotEqual, code.OpLessThan:
 
@@ -74,8 +88,6 @@ func (vm *VM) Run() error {
 		case code.OpBang:
 			top := vm.stack[vm.sp-1]
 			vm.stack[vm.sp-1] = lib.Boolean(top == lib.FALSE || top == lib.NULL)
-		case code.OpPop:
-			vm.sp--
 		default:
 			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
@@ -93,6 +105,11 @@ func (vm *VM) push(obj object.Object) {
 
 	vm.stack[vm.sp] = obj
 	vm.sp++
+}
+
+func (vm *VM) pop() object.Object {
+	vm.sp--
+	return vm.stack[vm.sp]
 }
 
 func executeBinaryOp(op code.Opcode, left, right object.Object) object.Object {
