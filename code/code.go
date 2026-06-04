@@ -21,6 +21,9 @@ const (
 	OpNotEqual
 	OpLessThan
 
+	OpBranch
+	OpBranchNotEqual
+
 	OpAdd
 	OpSub
 	OpMul
@@ -45,6 +48,9 @@ var definitions = map[Opcode]*Definition{
 	OpEqual:    {"EQ", []int{}},
 	OpNotEqual: {"NEQ", []int{}},
 	OpLessThan: {"LT", []int{}},
+
+	OpBranch:         {"B", []int{2}},
+	OpBranchNotEqual: {"BNE", []int{2}},
 
 	OpAdd: {"ADD", []int{}},
 	OpSub: {"SUB", []int{}},

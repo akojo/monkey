@@ -36,6 +36,12 @@ func TestBooleanExpressions(t *testing.T) {
 	expect(t, "!true", []constant{}, TRUE, NOT, POP)
 }
 
+func TestConditionals(t *testing.T) {
+	expect(t, "if (true) { 10 }; 3333;", []constant{10, 3333},
+		TRUE, BNE(7), PUSH(0), POP, PUSH(1), POP)
+	//  0000  0001    0004      0007 0008        0011
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -67,7 +73,7 @@ func testInstructions(expected code.Instructions, actual code.Instructions) erro
 
 	for i, ins := range expected {
 		if actual[i] != ins {
-			return fmt.Errorf("wrong instruction at %d:\n  want %q\n  got  %q", i, ins, actual[i])
+			return fmt.Errorf("wrong instruction at %d:\n  want %02x  %q\n  got  %02x  %q", i, ins, expected, actual[i], actual)
 		}
 	}
 
@@ -112,23 +118,31 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
-func PUSH(index int) []byte {
+func PUSH(index int) code.Instructions {
 	return code.Make(code.OpConstant, index)
 }
 
-var POP []byte = code.Make(code.OpPop)
+var POP code.Instructions = code.Make(code.OpPop)
 
-var FALSE []byte = code.Make(code.OpFalse)
-var TRUE []byte = code.Make(code.OpTrue)
+var FALSE code.Instructions = code.Make(code.OpFalse)
+var TRUE code.Instructions = code.Make(code.OpTrue)
 
-var EQ []byte = code.Make(code.OpEqual)
-var NEQ []byte = code.Make(code.OpNotEqual)
-var LT []byte = code.Make(code.OpLessThan)
+var EQ code.Instructions = code.Make(code.OpEqual)
+var NEQ code.Instructions = code.Make(code.OpNotEqual)
+var LT code.Instructions = code.Make(code.OpLessThan)
 
-var ADD []byte = code.Make(code.OpAdd)
-var SUB []byte = code.Make(code.OpSub)
-var MUL []byte = code.Make(code.OpMul)
-var DIV []byte = code.Make(code.OpDiv)
+func B(offset int) code.Instructions {
+	return code.Make(code.OpBranch, offset)
+}
 
-var NEG []byte = code.Make(code.OpMinus)
-var NOT []byte = code.Make(code.OpBang)
+func BNE(offset int) code.Instructions {
+	return code.Make(code.OpBranchNotEqual, offset)
+}
+
+var ADD code.Instructions = code.Make(code.OpAdd)
+var SUB code.Instructions = code.Make(code.OpSub)
+var MUL code.Instructions = code.Make(code.OpMul)
+var DIV code.Instructions = code.Make(code.OpDiv)
+
+var NEG code.Instructions = code.Make(code.OpMinus)
+var NOT code.Instructions = code.Make(code.OpBang)

@@ -8,15 +8,25 @@ import (
 	"github.com/akojo/monkey/object"
 )
 
+type EmittedInstruction struct {
+	Opcode   code.Opcode
+	Position int
+}
+
 type Compiler struct {
 	instructions code.Instructions
 	constants    []object.Object
+
+	currentInstruction  EmittedInstruction
+	previousInstruction EmittedInstruction
 }
 
 func New() *Compiler {
 	return &Compiler{
-		instructions: code.Instructions{},
-		constants:    []object.Object{},
+		instructions:        code.Instructions{},
+		constants:           []object.Object{},
+		currentInstruction:  EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
 	}
 }
 
@@ -35,6 +45,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpPop)
+	case *ast.BlockStatement:
+		for _, s := range node.Statements {
+			err := c.Compile(s)
+			if err != nil {
+				return err
+			}
+		}
 	case *ast.InfixExpression:
 		var err error
 		if node.Operator == ">" {
@@ -87,6 +104,26 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
+	case *ast.IFExpression:
+		err := c.Compile(node.Condition)
+		if err != nil {
+			return err
+		}
+
+		branch := c.emit(code.OpBranchNotEqual, 65535) // placeholder offset
+
+		err = c.Compile(node.Consequence)
+		if err != nil {
+			return err
+		}
+
+		// keep last value of consequence on the stack
+		if c.currentInstruction.Opcode == code.OpPop {
+			c.removeCurrent()
+		}
+
+		targetPos := len(c.instructions)
+		c.replaceOperands(branch, targetPos)
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}
@@ -112,7 +149,11 @@ func (c *Compiler) Bytecode() *Bytecode {
 
 func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
-	pos := c.addInstruction(ins)
+	pos := c.add(ins)
+
+	c.previousInstruction = c.currentInstruction
+	c.currentInstruction = EmittedInstruction{Opcode: op, Position: pos}
+
 	return pos
 }
 
@@ -122,10 +163,23 @@ func (c *Compiler) addConstant(obj object.Object) int {
 	return pos
 }
 
-func (c *Compiler) addInstruction(ins []byte) int {
+func (c *Compiler) add(ins []byte) int {
 	pos := len(c.instructions)
 	c.instructions = append(c.instructions, ins...)
 	return pos
+}
+
+func (c *Compiler) removeCurrent() {
+	c.instructions = c.instructions[:c.currentInstruction.Position]
+	c.currentInstruction = c.previousInstruction
+}
+
+func (c *Compiler) replaceOperands(pos int, operand ...int) {
+	// Get the current op to calculate correct operand lengths
+	op := code.Opcode(c.instructions[pos])
+	instruction := code.Make(op, operand...)
+
+	copy(c.instructions[pos+1:], instruction[1:])
 }
 
 type Bytecode struct {
