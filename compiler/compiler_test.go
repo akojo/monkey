@@ -40,6 +40,10 @@ func TestConditionals(t *testing.T) {
 	expect(t, "if (true) { 10 }; 3333;", []constant{10, 3333},
 		TRUE, BNE(7), PUSH(0), POP, PUSH(1), POP)
 	//  0000  0001    0004      0007 0008        0011
+
+	expect(t, "if (true) { 10 } else { 20 }; 3333;", []constant{10, 20, 3333},
+		TRUE, BNE(10), PUSH(0), B(13), PUSH(1), POP, PUSH(2), POP)
+	//  0000  0001     0004     0007   0010     0013 0014     0017
 }
 
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {

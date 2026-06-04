@@ -21,6 +21,8 @@ type Compiler struct {
 	previousInstruction EmittedInstruction
 }
 
+const INVALID_OFFSET = 65535
+
 func New() *Compiler {
 	return &Compiler{
 		instructions:        code.Instructions{},
@@ -110,7 +112,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		branch := c.emit(code.OpBranchNotEqual, 65535) // placeholder offset
+		skipConsequence := c.emit(code.OpBranchNotEqual, INVALID_OFFSET)
 
 		err = c.Compile(node.Consequence)
 		if err != nil {
@@ -122,8 +124,24 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.removeCurrent()
 		}
 
-		targetPos := len(c.instructions)
-		c.replaceOperands(branch, targetPos)
+		if node.Alternative == nil {
+			c.replaceOperands(skipConsequence, len(c.instructions))
+		} else {
+			skipAlternative := c.emit(code.OpBranch, INVALID_OFFSET)
+
+			c.replaceOperands(skipConsequence, len(c.instructions))
+
+			err := c.Compile(node.Alternative)
+			if err != nil {
+				return err
+			}
+
+			if c.currentInstruction.Opcode == code.OpPop {
+				c.removeCurrent()
+			}
+
+			c.replaceOperands(skipAlternative, len(c.instructions))
+		}
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}
