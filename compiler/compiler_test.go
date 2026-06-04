@@ -13,178 +13,33 @@ import (
 	"github.com/akojo/monkey/parser"
 )
 
-type compilerTestCase struct {
-	input              string
-	expectConstants    []any
-	expectInstructions code.Instructions
-}
+type constant any
 
 func TestIntegerArithmetic(t *testing.T) {
-	tests := []compilerTestCase{
-		{
-			input:           "1 + 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpAdd),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1 - 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpSub),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1 * 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpMul),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "2 / 1",
-			expectConstants: []any{2, 1},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpDiv),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1; 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpPop),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "-1",
-			expectConstants: []any{1},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpMinus),
-				code.Make(code.OpPop),
-			),
-		},
-	}
-
-	for _, test := range tests {
-		runCompilerTest(t, test)
-	}
+	expect(t, "1 + 2", []constant{1, 2}, PUSH(0), PUSH(1), ADD, POP)
+	expect(t, "1 - 2", []constant{1, 2}, PUSH(0), PUSH(1), SUB, POP)
+	expect(t, "1 * 2", []constant{1, 2}, PUSH(0), PUSH(1), MUL, POP)
+	expect(t, "2 / 1", []constant{2, 1}, PUSH(0), PUSH(1), DIV, POP)
+	expect(t, "1; 2", []constant{1, 2}, PUSH(0), POP, PUSH(1), POP)
+	expect(t, "-1", []constant{1}, PUSH(0), NEG, POP)
 }
 
 func TestBooleanExpressions(t *testing.T) {
-	tests := []compilerTestCase{
-		{
-			input:           "false",
-			expectConstants: []any{},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpFalse),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "true",
-			expectConstants: []any{},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpTrue),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1 < 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpLessThan),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1 > 2",
-			expectConstants: []any{2, 1},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpLessThan),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1 == 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpEqual),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "1 != 2",
-			expectConstants: []any{1, 2},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpConstant, 0),
-				code.Make(code.OpConstant, 1),
-				code.Make(code.OpNotEqual),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "true == false",
-			expectConstants: []any{},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpTrue),
-				code.Make(code.OpFalse),
-				code.Make(code.OpEqual),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "true != false",
-			expectConstants: []any{},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpTrue),
-				code.Make(code.OpFalse),
-				code.Make(code.OpNotEqual),
-				code.Make(code.OpPop),
-			),
-		},
-		{
-			input:           "!true",
-			expectConstants: []any{},
-			expectInstructions: slices.Concat(
-				code.Make(code.OpTrue),
-				code.Make(code.OpBang),
-				code.Make(code.OpPop),
-			),
-		},
-	}
-
-	for _, test := range tests {
-		runCompilerTest(t, test)
-	}
+	expect(t, "false", []constant{}, FALSE, POP)
+	expect(t, "true", []constant{}, TRUE, POP)
+	expect(t, "1 < 2", []constant{1, 2}, PUSH(0), PUSH(1), LT, POP)
+	expect(t, "1 > 2", []constant{2, 1}, PUSH(0), PUSH(1), LT, POP)
+	expect(t, "1 == 2", []constant{1, 2}, PUSH(0), PUSH(1), EQ, POP)
+	expect(t, "1 != 2", []constant{1, 2}, PUSH(0), PUSH(1), NEQ, POP)
+	expect(t, "true == false", []constant{}, TRUE, FALSE, EQ, POP)
+	expect(t, "true != false", []constant{}, TRUE, FALSE, NEQ, POP)
+	expect(t, "!true", []constant{}, TRUE, NOT, POP)
 }
 
-func runCompilerTest(t *testing.T, test compilerTestCase) {
+func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
-	program := parse(test.input)
+	program := parse(input)
 
 	compiler := New()
 	err := compiler.Compile(program)
@@ -194,14 +49,14 @@ func runCompilerTest(t *testing.T, test compilerTestCase) {
 
 	bytecode := compiler.Bytecode()
 
-	err = testInstructions(test.expectInstructions, bytecode.Instructions)
+	err = testInstructions(slices.Concat(instructions...), bytecode.Instructions)
 	if err != nil {
-		t.Fatalf("%q: %s", test.input, err)
+		t.Fatalf("%q: %s", input, err)
 	}
 
-	err = testConstants(test.expectConstants, bytecode.Constants)
+	err = testConstants(constants, bytecode.Constants)
 	if err != nil {
-		t.Fatalf("%q: %s", test.input, err)
+		t.Fatalf("%q: %s", input, err)
 	}
 }
 
@@ -219,7 +74,7 @@ func testInstructions(expected code.Instructions, actual code.Instructions) erro
 	return nil
 }
 
-func testConstants(expected []any, actual []object.Object) error {
+func testConstants(expected []constant, actual []object.Object) error {
 	if len(expected) != len(actual) {
 		return fmt.Errorf("constants:\n  want %d  %q\n  got  %d  %q", len(expected), expected, len(actual), actual)
 	}
@@ -256,3 +111,24 @@ func parse(input string) *ast.Program {
 	p := parser.New(l)
 	return p.ParseProgram()
 }
+
+func PUSH(index int) []byte {
+	return code.Make(code.OpConstant, index)
+}
+
+var POP []byte = code.Make(code.OpPop)
+
+var FALSE []byte = code.Make(code.OpFalse)
+var TRUE []byte = code.Make(code.OpTrue)
+
+var EQ []byte = code.Make(code.OpEqual)
+var NEQ []byte = code.Make(code.OpNotEqual)
+var LT []byte = code.Make(code.OpLessThan)
+
+var ADD []byte = code.Make(code.OpAdd)
+var SUB []byte = code.Make(code.OpSub)
+var MUL []byte = code.Make(code.OpMul)
+var DIV []byte = code.Make(code.OpDiv)
+
+var NEG []byte = code.Make(code.OpMinus)
+var NOT []byte = code.Make(code.OpBang)

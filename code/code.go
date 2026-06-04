@@ -12,6 +12,7 @@ type Opcode byte
 
 const (
 	OpConstant Opcode = iota
+	OpPop
 
 	OpFalse
 	OpTrue
@@ -27,8 +28,6 @@ const (
 
 	OpMinus
 	OpBang
-
-	OpPop
 )
 
 type Definition struct {
@@ -38,6 +37,7 @@ type Definition struct {
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"PUSH", []int{2}}, // push a constant
+	OpPop:      {"POP", []int{}},
 
 	OpFalse: {"FALSE", []int{}},
 	OpTrue:  {"TRUE", []int{}},
@@ -53,8 +53,6 @@ var definitions = map[Opcode]*Definition{
 
 	OpMinus: {"NEG", []int{}},
 	OpBang:  {"NOT", []int{}},
-
-	OpPop: {"POP", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {
