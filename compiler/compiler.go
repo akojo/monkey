@@ -195,6 +195,7 @@ func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
 		Instructions: c.instructions,
 		Constants:    c.constants,
+		GlobalsSize:  len(c.symbolTable.store),
 	}
 }
 
@@ -236,4 +237,5 @@ func (c *Compiler) replaceOperands(pos int, operand ...int) {
 type Bytecode struct {
 	Instructions code.Instructions
 	Constants    []object.Object
+	GlobalsSize  int
 }

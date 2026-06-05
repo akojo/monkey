@@ -3,14 +3,13 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 )
-
-const GLOBALS_SIZE = 1 << 16
 
 type VM struct {
 	constants    []object.Object
@@ -30,7 +29,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 		stack: make([]object.Object, 1),
 		sp:    0,
 
-		globals: make([]object.Object, GLOBALS_SIZE),
+		globals: make([]object.Object, bytecode.GlobalsSize),
 	}
 }
 
@@ -118,11 +117,9 @@ func (vm *VM) Run() error {
 }
 
 func (vm *VM) push(obj object.Object) {
-	if vm.sp == cap(vm.stack) {
-		newLength := vm.sp * 2
-		newStack := make([]object.Object, newLength)
-		copy(newStack, vm.stack)
-		vm.stack = newStack
+	if vm.sp == len(vm.stack) {
+		vm.stack = slices.Grow(vm.stack, vm.sp)
+		vm.stack = vm.stack[:cap(vm.stack)]
 	}
 
 	vm.stack[vm.sp] = obj

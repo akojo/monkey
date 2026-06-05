@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/akojo/monkey/compiler"
@@ -24,7 +25,7 @@ func Start(in io.Reader, useEvaluator bool) {
 	env := object.NewEnvironment()
 
 	constants := []object.Object{}
-	globals := make([]object.Object, vm.GLOBALS_SIZE)
+	globals := []object.Object{}
 	symbolTable := compiler.NewSymbolTable()
 
 	for {
@@ -60,6 +61,11 @@ func Start(in io.Reader, useEvaluator bool) {
 
 		code := c.Bytecode()
 		constants = code.Constants
+
+		if code.GlobalsSize > len(globals) {
+			globals = slices.Grow(globals, code.GlobalsSize-len(globals))
+			globals = globals[:cap(globals)]
+		}
 
 		machine := vm.NewWithGlobals(code, globals)
 		err = machine.Run()

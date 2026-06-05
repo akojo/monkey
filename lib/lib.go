@@ -126,3 +126,9 @@ func Boolean(value bool) object.Object {
 func Error(format string, a ...any) *object.Error {
 	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
+
+func Realloc[T any](s []T, size int) []T {
+	r := make([]T, size)
+	copy(r, s)
+	return r
+}

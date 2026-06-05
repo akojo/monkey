@@ -35,8 +35,7 @@ func Append(args ...object.Object) object.Object {
 	array := args[0].(*object.Array)
 	length := len(array.Elements)
 
-	newElements := make([]object.Object, length+1)
-	copy(newElements, array.Elements)
+	newElements := lib.Realloc(array.Elements, length+1)
 	newElements[length] = args[1]
 
 	return &object.Array{Elements: newElements}
