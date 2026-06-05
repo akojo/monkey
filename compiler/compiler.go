@@ -19,6 +19,8 @@ type Compiler struct {
 
 	currentInstruction  EmittedInstruction
 	previousInstruction EmittedInstruction
+
+	symbolTable *SymbolTable
 }
 
 const INVALID_OFFSET = 65535
@@ -29,7 +31,16 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		currentInstruction:  EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
+		symbolTable:         NewSymbolTable(),
 	}
+}
+
+func NewWithState(s *SymbolTable, constants []object.Object) *Compiler {
+	compiler := New()
+	compiler.symbolTable = s
+	compiler.constants = constants
+
+	return compiler
 }
 
 func (c *Compiler) Compile(node ast.Node) error {
@@ -57,6 +68,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 				return err
 			}
 		}
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, symbol.Index)
 	case *ast.InfixExpression:
 		var err error
 		if node.Operator == ">" {
@@ -136,6 +154,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		c.replaceOperands(jumpToEnd, len(c.instructions))
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable '%s'", node.Value)
+		}
+
+		c.emit(code.OpGetGlobal, symbol.Index)
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}

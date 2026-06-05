@@ -86,6 +86,12 @@ func TestIfElseExpression(t *testing.T) {
 	expect(t, "if (true) {}", nil)
 }
 
+func TestGlobalLetStatements(t *testing.T) {
+	expect(t, "let one = 1; 1", 1)
+	expect(t, "let one = 1; let two = 2; one + two;", 3)
+	expect(t, "let one = 1; let two = one + one; one + two", 3)
+}
+
 func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 

@@ -54,6 +54,12 @@ func TestConditionals(t *testing.T) {
 	//  0000  0001    0004  0005  0008  0009 0010     0013
 }
 
+func TestGlobalStatements(t *testing.T) {
+	expect(t, "let one = 1; let two = 2;", []constant{1, 2}, PUSH(0), SETG(0), PUSH(1), SETG(1))
+	expect(t, "let one = 1; one;", []constant{1}, PUSH(0), SETG(0), GETG(0), POP)
+	expect(t, "let one = 1; let two = one; two;", []constant{1}, PUSH(0), SETG(0), GETG(0), SETG(1), GETG(1), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -135,6 +141,14 @@ func PUSH(index int) code.Instructions {
 }
 
 var POP = code.Make(code.OpPop)
+
+func GETG(index int) code.Instructions {
+	return code.Make(code.OpGetGlobal, index)
+}
+
+func SETG(index int) code.Instructions {
+	return code.Make(code.OpSetGlobal, index)
+}
 
 var NULL = code.Make(code.OpNull)
 

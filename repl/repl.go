@@ -23,6 +23,10 @@ func Start(in io.Reader, useEvaluator bool) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
 
+	constants := []object.Object{}
+	globals := make([]object.Object, vm.GLOBALS_SIZE)
+	symbolTable := compiler.NewSymbolTable()
+
 	for {
 		fmt.Fprintf(os.Stdout, PROMPT)
 		scanned := scanner.Scan()
@@ -31,7 +35,40 @@ func Start(in io.Reader, useEvaluator bool) {
 		}
 
 		line := scanner.Text()
-		result := run(strings.NewReader(line), "<stdin>", env, useEvaluator)
+
+		p := parser.New(lexer.New(strings.NewReader(line), "<stdin>"))
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParseErrors(os.Stderr, p.Errors())
+			continue
+		}
+
+		if useEvaluator {
+			err := evaluator.Eval(program, env)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+			}
+			continue
+		}
+
+		c := compiler.NewWithState(symbolTable, constants)
+		err := c.Compile(program)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "compiler error: %s\n", err)
+			continue
+		}
+
+		code := c.Bytecode()
+		constants = code.Constants
+
+		machine := vm.NewWithGlobals(code, globals)
+		err = machine.Run()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %s\n", err)
+			continue
+		}
+
+		result := machine.StackAboveTop()
 		if result != nil {
 			fmt.Fprintf(os.Stdout, "%s\n", result.Inspect())
 		}
@@ -39,12 +76,7 @@ func Start(in io.Reader, useEvaluator bool) {
 }
 
 func Run(in io.Reader, filename string, useEvaluator bool) object.Object {
-	return run(in, filename, object.NewEnvironment(), useEvaluator)
-}
-
-func run(in io.Reader, filename string, env *object.Environment, useEvaluator bool) object.Object {
 	p := parser.New(lexer.New(in, filename))
-
 	program := p.ParseProgram()
 	if len(p.Errors()) != 0 {
 		printParseErrors(os.Stderr, p.Errors())
@@ -52,7 +84,7 @@ func run(in io.Reader, filename string, env *object.Environment, useEvaluator bo
 	}
 
 	if useEvaluator {
-		return evaluator.Eval(program, env)
+		return evaluator.Eval(program, object.NewEnvironment())
 	}
 
 	c := compiler.New()
@@ -69,7 +101,12 @@ func run(in io.Reader, filename string, env *object.Environment, useEvaluator bo
 		return nil
 	}
 
-	return machine.StackAboveTop()
+	result := machine.StackAboveTop()
+	if result != nil {
+		fmt.Fprintf(os.Stdout, "%s\n", result.Inspect())
+	}
+
+	return nil
 }
 
 func printParseErrors(out io.Writer, errors []error) {

@@ -10,12 +10,16 @@ import (
 	"github.com/akojo/monkey/object"
 )
 
+const GLOBALS_SIZE = 1 << 16
+
 type VM struct {
 	constants    []object.Object
 	instructions code.Instructions
 
 	stack []object.Object
 	sp    int
+
+	globals []object.Object
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
@@ -25,7 +29,15 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 		stack: make([]object.Object, 1),
 		sp:    0,
+
+		globals: make([]object.Object, GLOBALS_SIZE),
 	}
+}
+
+func NewWithGlobals(bytecode *compiler.Bytecode, globals []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = globals
+	return vm
 }
 
 func (vm *VM) StackTop() object.Object {
@@ -51,6 +63,16 @@ func (vm *VM) Run() error {
 			vm.push(vm.constants[idx])
 		case code.OpPop:
 			vm.sp--
+		case code.OpGetGlobal:
+			index := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.push(vm.globals[index])
+		case code.OpSetGlobal:
+			index := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+
+			vm.globals[index] = vm.pop()
 		case code.OpNull:
 			vm.push(lib.NULL)
 		case code.OpFalse:
