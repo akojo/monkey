@@ -60,6 +60,11 @@ func TestGlobalStatements(t *testing.T) {
 	expect(t, "let one = 1; let two = one; two;", []constant{1}, PUSH(0), SETG(0), GETG(0), SETG(1), GETG(1), POP)
 }
 
+func TestStringExpressions(t *testing.T) {
+	expect(t, `"monkey"`, []constant{"monkey"}, PUSH(0), POP)
+	expect(t, `"mon" + "key"`, []constant{"mon", "key"}, PUSH(0), PUSH(1), ADD, POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -108,6 +113,8 @@ func testConstants(expected []constant, actual []object.Object) error {
 		switch c := c.(type) {
 		case int:
 			err = testIntegerObject(int64(c), actual[i])
+		case string:
+			err = testStringObject(c, actual[i])
 		}
 		if err != nil {
 			return fmt.Errorf("constant %d: %s", i, err)
@@ -127,6 +134,17 @@ func testIntegerObject(expected int64, actual object.Object) error {
 		return fmt.Errorf("want %d, got %d", expected, result.Value)
 	}
 
+	return nil
+}
+
+func testStringObject(expected string, actual object.Object) error {
+	str, ok := actual.(*object.String)
+	if !ok {
+		return fmt.Errorf("str: expected String, got %q", actual.Type())
+	}
+	if str.Value != expected {
+		return fmt.Errorf("str.Value: expected %q, got %q", expected, str.Value)
+	}
 	return nil
 }
 

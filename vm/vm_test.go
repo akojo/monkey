@@ -64,6 +64,12 @@ func TestBooleanExpressions(t *testing.T) {
 	expect(t, "1 != 2", true)
 }
 
+func TestStringExpressions(t *testing.T) {
+	expect(t, `"monkey"`, "monkey")
+	expect(t, `"mon" + "key"`, "monkey")
+	expect(t, `"mon" + "key" + "banana"`, "monkeybanana")
+}
+
 func TestBangOperator(t *testing.T) {
 	expect(t, "!true", false)
 	expect(t, "!false", true)
@@ -127,6 +133,8 @@ func expectObject(expected any, actual object.Object) error {
 		err = expectInteger(int64(expected), actual)
 	case bool:
 		err = expectBoolean(bool(expected), actual)
+	case string:
+		err = expectString(expected, actual)
 	case nil:
 		if actual != lib.NULL {
 			return fmt.Errorf("expected NULL, got %q", actual)
@@ -158,6 +166,19 @@ func expectBoolean(expected bool, actual object.Object) error {
 
 	if expected != result.Value {
 		return fmt.Errorf("want %t, got %t", expected, result.Value)
+	}
+
+	return nil
+}
+
+func expectString(expected string, actual object.Object) error {
+	result, ok := actual.(*object.String)
+	if !ok {
+		return fmt.Errorf("want String, got %T (%+v)", actual, actual)
+	}
+
+	if expected != result.Value {
+		return fmt.Errorf("want %s, got %s", expected, result.Value)
 	}
 
 	return nil
