@@ -22,6 +22,8 @@ const (
 	OpFalse
 	OpTrue
 
+	OpArray
+
 	OpEqual
 	OpNotEqual
 	OpLessThan
@@ -54,6 +56,8 @@ var definitions = map[Opcode]*Definition{
 
 	OpFalse: {"FALSE", []int{}},
 	OpTrue:  {"TRUE", []int{}},
+
+	OpArray: {"ARRAY", []int{2}},
 
 	OpEqual:    {"EQ", []int{}},
 	OpNotEqual: {"NEQ", []int{}},

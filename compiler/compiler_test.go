@@ -65,6 +65,13 @@ func TestStringExpressions(t *testing.T) {
 	expect(t, `"mon" + "key"`, []constant{"mon", "key"}, PUSH(0), PUSH(1), ADD, POP)
 }
 
+func TestArrayLiterals(t *testing.T) {
+	expect(t, "[]", []constant{}, ARRAY(0), POP)
+	expect(t, "[1, 2, 3]", []constant{1, 2, 3}, PUSH(0), PUSH(1), PUSH(2), ARRAY(3), POP)
+	expect(t, "[1 + 2, 3 - 4, 5 * 6]", []constant{1, 2, 3, 4, 5, 6},
+		PUSH(0), PUSH(1), ADD, PUSH(2), PUSH(3), SUB, PUSH(4), PUSH(5), MUL, ARRAY(3), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -172,6 +179,10 @@ var NULL = code.Make(code.OpNull)
 
 var FALSE = code.Make(code.OpFalse)
 var TRUE = code.Make(code.OpTrue)
+
+func ARRAY(size int) code.Instructions {
+	return code.Make(code.OpArray, size)
+}
 
 var EQ = code.Make(code.OpEqual)
 var NEQ = code.Make(code.OpNotEqual)

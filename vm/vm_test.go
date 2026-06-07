@@ -70,6 +70,12 @@ func TestStringExpressions(t *testing.T) {
 	expect(t, `"mon" + "key" + "banana"`, "monkeybanana")
 }
 
+func TestArrayLiterals(t *testing.T) {
+	expect(t, "[]", []int{})
+	expect(t, "[1, 2, 3]", []int{1, 2, 3})
+	expect(t, "[1 + 2, 3 - 4, 5 * 6]", []int{3, -1, 30})
+}
+
 func TestBangOperator(t *testing.T) {
 	expect(t, "!true", false)
 	expect(t, "!false", true)
@@ -135,6 +141,8 @@ func expectObject(expected any, actual object.Object) error {
 		err = expectBoolean(bool(expected), actual)
 	case string:
 		err = expectString(expected, actual)
+	case []int:
+		err = expectIntegerArray(expected, actual)
 	case nil:
 		if actual != lib.NULL {
 			return fmt.Errorf("expected NULL, got %q", actual)
@@ -181,5 +189,24 @@ func expectString(expected string, actual object.Object) error {
 		return fmt.Errorf("want %s, got %s", expected, result.Value)
 	}
 
+	return nil
+}
+
+func expectIntegerArray(expected []int, actual object.Object) error {
+	array, ok := actual.(*object.Array)
+	if !ok {
+		return fmt.Errorf("want Array, got %T (%+v)", actual, actual)
+	}
+
+	if len(array.Elements) != len(expected) {
+		return fmt.Errorf("array.Elements: want %d, got %d", len(expected), len(array.Elements))
+	}
+
+	for i, expectedElement := range expected {
+		err := expectInteger(int64(expectedElement), array.Elements[i])
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

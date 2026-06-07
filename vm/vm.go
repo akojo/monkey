@@ -78,6 +78,17 @@ func (vm *VM) Run() error {
 			vm.push(lib.FALSE)
 		case code.OpTrue:
 			vm.push(lib.TRUE)
+		case code.OpArray:
+			n := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			start, end := vm.sp-n, vm.sp
+			elements := make([]object.Object, end-start)
+			copy(elements, vm.stack[start:end])
+			vm.sp -= n
+
+			vm.stack[vm.sp] = &object.Array{Elements: elements}
+			vm.sp++
 		case code.OpBranch:
 			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
 			ip = pos - 1
