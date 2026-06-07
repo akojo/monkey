@@ -61,10 +61,9 @@ func Add(left, right object.Object) object.Object {
 		l := left.Elements
 		r := right.(*object.Array).Elements
 
-		result := &object.Array{Elements: make([]object.Object, len(l)+len(r))}
-		copy(result.Elements, l)
-		copy(result.Elements[len(l):], r)
-		return result
+		result := Realloc(l, len(l)+len(r))
+		copy(result[len(l):], r)
+		return &object.Array{Elements: result}
 	}
 	return Error("invalid types: %s + %s", left.Type(), right.Type())
 }
