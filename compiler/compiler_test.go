@@ -11,6 +11,7 @@ import (
 	"github.com/akojo/monkey/lexer"
 	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
+	"github.com/akojo/monkey/testutil"
 )
 
 type constant any
@@ -116,42 +117,11 @@ func testConstants(expected []constant, actual []object.Object) error {
 	}
 
 	for i, c := range expected {
-		var err error
-		switch c := c.(type) {
-		case int:
-			err = testIntegerObject(int64(c), actual[i])
-		case string:
-			err = testStringObject(c, actual[i])
-		}
-		if err != nil {
+		if err := testutil.ExpectObject(actual[i], c); err != nil {
 			return fmt.Errorf("constant %d: %s", i, err)
 		}
 	}
 
-	return nil
-}
-
-func testIntegerObject(expected int64, actual object.Object) error {
-	result, ok := actual.(*object.Integer)
-	if !ok {
-		return fmt.Errorf("want Integer, got %T (%+v)", actual, actual)
-	}
-
-	if expected != result.Value {
-		return fmt.Errorf("want %d, got %d", expected, result.Value)
-	}
-
-	return nil
-}
-
-func testStringObject(expected string, actual object.Object) error {
-	str, ok := actual.(*object.String)
-	if !ok {
-		return fmt.Errorf("str: expected String, got %q", actual.Type())
-	}
-	if str.Value != expected {
-		return fmt.Errorf("str.Value: expected %q, got %q", expected, str.Value)
-	}
 	return nil
 }
 

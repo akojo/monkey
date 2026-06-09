@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/akojo/monkey/lexer"
-	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
+	"github.com/akojo/monkey/testutil"
 )
 
 func TestIntegerExpression(t *testing.T) {
@@ -237,9 +237,12 @@ func TestArrayLiterals(t *testing.T) {
 		t.Fatalf("array.Elements: expected 3 elements, got %d", len(array.Elements))
 	}
 
-	expectIntegerObject(t, array.Elements[0], 1)
-	expectIntegerObject(t, array.Elements[1], 4)
-	expectIntegerObject(t, array.Elements[2], 6)
+	expected := []int{1, 4, 6}
+	for i, element := range array.Elements {
+		if err := testutil.ExpectObject(element, expected[i]); err != nil {
+			t.Error(err)
+		}
+	}
 }
 
 func TestArrayIndexExpressions(t *testing.T) {
@@ -270,8 +273,12 @@ func TestHashLiterals(t *testing.T) {
 		pair, ok := hash.Pairs[key]
 		if !ok {
 			t.Errorf("no pair for %v", key)
+			return
 		}
-		expectObject(t, pair.Value, value)
+		if err := testutil.ExpectObject(pair.Value, value); err != nil {
+			t.Error(err)
+			return
+		}
 	}
 
 	evaluated := eval(`
@@ -318,73 +325,7 @@ func expect(t *testing.T, input string, expected any) {
 		t.Errorf("got unexpected nil")
 		return
 	}
-	expectObject(t, got, expected)
-}
-
-func expectObject(t *testing.T, got object.Object, expected any) {
-	switch e := expected.(type) {
-	case int:
-		expectIntegerObject(t, got, int64(e))
-	case int64:
-		expectIntegerObject(t, got, e)
-	case bool:
-		expectBooleanObject(t, got, e)
-	case string:
-		expectStringObject(t, got, e)
-	case error:
-		expectErrorObject(t, got, e.Error())
-	case nil:
-		expectNullObject(t, got)
-	default:
-		t.Fatalf("invalid type %T", e)
-	}
-}
-
-func expectIntegerObject(t *testing.T, obj object.Object, expected int64) {
-	result, ok := obj.(*object.Integer)
-	if !ok {
-		t.Errorf("result: expected Integer, got %T: %s", obj, obj.Inspect())
-		return
-	}
-	if result.Value != expected {
-		t.Errorf("result.Value: expected %d, got %d", expected, result.Value)
-	}
-}
-
-func expectBooleanObject(t *testing.T, obj object.Object, expected bool) {
-	result, ok := obj.(*object.Boolean)
-	if !ok {
-		t.Errorf("result: expected Boolean, got %q", obj.Inspect())
-		return
-	}
-	if result.Value != expected {
-		t.Errorf("result.Value: expected %t, got %t", expected, result.Value)
-	}
-}
-
-func expectStringObject(t *testing.T, obj object.Object, expected string) {
-	str, ok := obj.(*object.String)
-	if !ok {
-		t.Fatalf("str: expected String, got %q", obj.Type())
-	}
-	if str.Value != expected {
-		t.Errorf("str.Value: expected %q, got %q", expected, str.Value)
-	}
-}
-
-func expectErrorObject(t *testing.T, obj object.Object, expected string) {
-	err, ok := obj.(*object.Error)
-	if !ok {
-		t.Errorf("result: expected Error: got %q", obj.Inspect())
-		return
-	}
-	if err.Message != expected {
-		t.Errorf("err.Message: expected %q, got %q", expected, err.Message)
-	}
-}
-
-func expectNullObject(t *testing.T, obj object.Object) {
-	if obj != lib.NULL {
-		t.Errorf("expected NULL, got %q", obj.Inspect())
+	if err := testutil.ExpectObject(got, expected); err != nil {
+		t.Error(err)
 	}
 }

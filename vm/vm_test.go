@@ -1,16 +1,14 @@
 package vm
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/akojo/monkey/ast"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/lexer"
-	"github.com/akojo/monkey/lib"
-	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
+	"github.com/akojo/monkey/testutil"
 )
 
 func TestIntegerArithmetic(t *testing.T) {
@@ -121,7 +119,7 @@ func expect(t *testing.T, input string, expected any) {
 		t.Fatalf("vm error: %s", err)
 	}
 
-	if err := expectObject(expected, vm.StackAboveTop()); err != nil {
+	if err := testutil.ExpectObject(vm.StackAboveTop(), expected); err != nil {
 		t.Errorf("%q: %s", input, err)
 	}
 }
@@ -130,83 +128,4 @@ func parse(input string) *ast.Program {
 	l := lexer.New(strings.NewReader(input), "test")
 	p := parser.New(l)
 	return p.ParseProgram()
-}
-
-func expectObject(expected any, actual object.Object) error {
-	var err error
-	switch expected := expected.(type) {
-	case int:
-		err = expectInteger(int64(expected), actual)
-	case bool:
-		err = expectBoolean(bool(expected), actual)
-	case string:
-		err = expectString(expected, actual)
-	case []int:
-		err = expectIntegerArray(expected, actual)
-	case nil:
-		if actual != lib.NULL {
-			return fmt.Errorf("expected NULL, got %q", actual)
-		}
-	default:
-		return fmt.Errorf("unsupported type %T", expected)
-	}
-	return err
-}
-
-func expectInteger(expected int64, actual object.Object) error {
-	result, ok := actual.(*object.Integer)
-	if !ok {
-		return fmt.Errorf("want Integer, got %T (%+v)", actual, actual)
-	}
-
-	if expected != result.Value {
-		return fmt.Errorf("want %d, got %d", expected, result.Value)
-	}
-
-	return nil
-}
-
-func expectBoolean(expected bool, actual object.Object) error {
-	result, ok := actual.(*object.Boolean)
-	if !ok {
-		return fmt.Errorf("want Boolean, got %T (%+v)", actual, actual)
-	}
-
-	if expected != result.Value {
-		return fmt.Errorf("want %t, got %t", expected, result.Value)
-	}
-
-	return nil
-}
-
-func expectString(expected string, actual object.Object) error {
-	result, ok := actual.(*object.String)
-	if !ok {
-		return fmt.Errorf("want String, got %T (%+v)", actual, actual)
-	}
-
-	if expected != result.Value {
-		return fmt.Errorf("want %s, got %s", expected, result.Value)
-	}
-
-	return nil
-}
-
-func expectIntegerArray(expected []int, actual object.Object) error {
-	array, ok := actual.(*object.Array)
-	if !ok {
-		return fmt.Errorf("want Array, got %T (%+v)", actual, actual)
-	}
-
-	if len(array.Elements) != len(expected) {
-		return fmt.Errorf("array.Elements: want %d, got %d", len(expected), len(array.Elements))
-	}
-
-	for i, expectedElement := range expected {
-		err := expectInteger(int64(expectedElement), array.Elements[i])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
