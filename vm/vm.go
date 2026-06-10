@@ -89,6 +89,30 @@ func (vm *VM) Run() error {
 
 			vm.stack[vm.sp] = &object.Array{Elements: elements}
 			vm.sp++
+		case code.OpHash:
+			npairs := int(code.ReadUint16(vm.instructions[ip+1:]))
+			ip += 2
+
+			start, end := vm.sp-npairs*2, vm.sp
+			pairs := make(map[object.HashKey]object.HashPair)
+
+			for i := start; i < end; i += 2 {
+				key := vm.stack[i]
+				value := vm.stack[i+1]
+
+				pair := object.HashPair{Key: key, Value: value}
+
+				hashKey, ok := key.(object.Hashable)
+				if !ok {
+					return fmt.Errorf("cannot use as hash key: %s", key.Type())
+				}
+
+				pairs[hashKey.Hash()] = pair
+			}
+			vm.sp -= npairs * 2
+
+			vm.stack[vm.sp] = &object.Hash{Pairs: pairs}
+			vm.sp++
 		case code.OpBranch:
 			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
 			ip = pos - 1

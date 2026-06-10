@@ -19,6 +19,8 @@ func ExpectObject(actual object.Object, expected any) error {
 		return expectString(actual, e)
 	case []int:
 		return expectIntegerArray(actual, e)
+	case map[object.HashKey]int64:
+		return expectIntegerHash(actual, e)
 	case error:
 		return expectError(actual, e.Error())
 	case nil:
@@ -91,9 +93,41 @@ func expectIntegerArray(actual object.Object, expected []int) error {
 	return nil
 }
 
+func expectIntegerHash(actual object.Object, expected map[object.HashKey]int64) error {
+	hash, err := assertType[*object.Hash](actual)
+	if err != nil {
+		return err
+	}
+
+	if len(hash.Pairs) != len(expected) {
+		return fmt.Errorf("len(hash): want %d, got %d", len(expected), len(hash.Pairs))
+	}
+
+	for expectKey, expectValue := range expected {
+		pair, ok := hash.Pairs[expectKey]
+		if !ok {
+			return fmt.Errorf("missing key in Pairs")
+		}
+
+		err := expectInteger(pair.Value, expectValue)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func expectNull(actual object.Object) error {
 	if actual != lib.NULL {
 		return fmt.Errorf("expected NULL, got %q", actual.Inspect())
 	}
 	return nil
+}
+
+func assertType[T object.Object](obj object.Object) (T, error) {
+	result, ok := obj.(T)
+	if !ok {
+		return *new(T), fmt.Errorf("want %T, got %T (%+v)", *new(T), obj, obj)
+	}
+	return result, nil
 }

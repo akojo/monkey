@@ -7,6 +7,7 @@ import (
 	"github.com/akojo/monkey/ast"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/lexer"
+	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
 	"github.com/akojo/monkey/testutil"
 )
@@ -72,6 +73,18 @@ func TestArrayLiterals(t *testing.T) {
 	expect(t, "[]", []int{})
 	expect(t, "[1, 2, 3]", []int{1, 2, 3})
 	expect(t, "[1 + 2, 3 - 4, 5 * 6]", []int{3, -1, 30})
+}
+
+func TestHashLiterals(t *testing.T) {
+	expect(t, "{}", map[object.HashKey]int64{})
+	expect(t, "{1: 2, 2: 3}", map[object.HashKey]int64{
+		(&object.Integer{Value: 1}).Hash(): 2,
+		(&object.Integer{Value: 2}).Hash(): 3,
+	})
+	expect(t, "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", map[object.HashKey]int64{
+		(&object.Integer{Value: 2}).Hash(): 4,
+		(&object.Integer{Value: 6}).Hash(): 16,
+	})
 }
 
 func TestBangOperator(t *testing.T) {
