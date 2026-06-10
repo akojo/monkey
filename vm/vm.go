@@ -113,6 +113,16 @@ func (vm *VM) Run() error {
 
 			vm.stack[vm.sp] = &object.Hash{Pairs: pairs}
 			vm.sp++
+		case code.OpIndex:
+			obj, index := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
+
+			result := lib.Index(obj, index)
+			if result.Type() == object.ERROR {
+				return errors.New(result.(*object.Error).Message)
+			}
+
+			vm.sp--
+			vm.stack[vm.sp-1] = result
 		case code.OpBranch:
 			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
 			ip = pos - 1

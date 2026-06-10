@@ -75,6 +75,15 @@ func TestArrayLiterals(t *testing.T) {
 	expect(t, "[1 + 2, 3 - 4, 5 * 6]", []int{3, -1, 30})
 }
 
+func TestArrayIndexExpressions(t *testing.T) {
+	expect(t, "[1, 2, 3][0]", 1)
+	expect(t, "[1, 2, 3][2]", 3)
+	expect(t, "[1, 2, 3][3]", nil)
+	expect(t, "let i = 0; [1, 2][i + 1]", 2)
+	expect(t, "let a = [1, 2, 3]; a[2]", 3)
+	expect(t, "let a = [1, 2, 3]; a[0] * a[1]", 2)
+}
+
 func TestHashLiterals(t *testing.T) {
 	expect(t, "{}", map[object.HashKey]int64{})
 	expect(t, "{1: 2, 2: 3}", map[object.HashKey]int64{
@@ -85,6 +94,15 @@ func TestHashLiterals(t *testing.T) {
 		(&object.Integer{Value: 2}).Hash(): 4,
 		(&object.Integer{Value: 6}).Hash(): 16,
 	})
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	expect(t, `{"foo": 5}["foo"]`, 5)
+	expect(t, `{"foo": 5}["bar"]`, nil)
+	expect(t, `{}["foo"]`, nil)
+	expect(t, `{5: 10}[5]`, 10)
+	expect(t, `{true: 5}[true]`, 5)
+	expect(t, `{false: 5}[false]`, 5)
 }
 
 func TestBangOperator(t *testing.T) {

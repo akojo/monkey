@@ -81,6 +81,13 @@ func TestHashLiterals(t *testing.T) {
 		PUSH(0), PUSH(1), PUSH(2), ADD, PUSH(3), PUSH(4), PUSH(5), MUL, HASH(2), POP)
 }
 
+func TestIndexExpressions(t *testing.T) {
+	expect(t, "[2, 3, 4][0 + 1]", []constant{2, 3, 4, 0, 1},
+		PUSH(0), PUSH(1), PUSH(2), ARRAY(3), PUSH(3), PUSH(4), ADD, INDEX, POP)
+	expect(t, "{1: 2}[1]", []constant{1, 2, 1},
+		PUSH(0), PUSH(1), HASH(1), PUSH(2), INDEX, POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -165,6 +172,8 @@ func ARRAY(size int) code.Instructions {
 func HASH(size int) code.Instructions {
 	return code.Make(code.OpHash, size)
 }
+
+var INDEX = code.Make(code.OpIndex)
 
 var EQ = code.Make(code.OpEqual)
 var NEQ = code.Make(code.OpNotEqual)

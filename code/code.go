@@ -24,6 +24,7 @@ const (
 
 	OpArray
 	OpHash
+	OpIndex
 
 	OpEqual
 	OpNotEqual
@@ -60,6 +61,7 @@ var definitions = map[Opcode]*Definition{
 
 	OpArray: {"ARRAY", []int{2}},
 	OpHash:  {"HASH", []int{2}},
+	OpIndex: {"INDEX", []int{}},
 
 	OpEqual:    {"EQ", []int{}},
 	OpNotEqual: {"NEQ", []int{}},
