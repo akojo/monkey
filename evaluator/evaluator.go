@@ -94,7 +94,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(index) {
 			return index
 		}
-		return evalIndexExpression(left, index)
+		return lib.Index(left, index)
 	case *ast.SliceExpression:
 		var start object.Object
 		var end object.Object
@@ -273,36 +273,6 @@ func unwrapReturnValue(obj object.Object) object.Object {
 	return obj
 }
 
-func evalIndexExpression(left object.Object, index object.Object) object.Object {
-	switch {
-	case left.Type() == object.ARRAY && index.Type() == object.INTEGER:
-		array := left.(*object.Array)
-		i := index.(*object.Integer).Value
-		if i < 0 || i > int64(len(array.Elements)-1) {
-			return lib.NULL
-		}
-		return array.Elements[i]
-	case left.Type() == object.ARRAY && index.Type() == object.SLICE:
-		array := left.(*object.Array)
-		slice := index.(*object.Slice)
-		return evalSliceIndexExpression(array, slice)
-	case left.Type() == object.HASH:
-		return evalHashIndexExpression(left, index)
-	}
-	return lib.Error("index operator not supported: %s", left.Type())
-}
-
-func evalSliceIndexExpression(array *object.Array, sliceObj *object.Slice) object.Object {
-	var end int64
-	if sliceObj.End == nil {
-		end = int64(len(array.Elements))
-	} else {
-		end = *sliceObj.End
-	}
-
-	return lib.SliceArray(array, sliceObj.Start, end)
-}
-
 func evalSliceExpression(start object.Object, end object.Object) object.Object {
 	switch {
 	case start == nil && end == nil:
@@ -315,22 +285,6 @@ func evalSliceExpression(start object.Object, end object.Object) object.Object {
 		return &object.Slice{Start: start.(*object.Integer).Value, End: &end.(*object.Integer).Value}
 	}
 	return lib.Error("slice operator not supported: %s:%s", start.Type(), end.Type())
-}
-
-func evalHashIndexExpression(hash, index object.Object) object.Object {
-	hashObject := hash.(*object.Hash)
-
-	key, ok := index.(object.Hashable)
-	if !ok {
-		return lib.Error("cannot use as hash key: %s", index.Type())
-	}
-
-	pair, ok := hashObject.Pairs[key.Hash()]
-	if !ok {
-		return lib.NULL
-	}
-
-	return pair.Value
 }
 
 func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {

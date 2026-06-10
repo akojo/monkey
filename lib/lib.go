@@ -84,6 +84,52 @@ func Multiply(left, right object.Object) object.Object {
 	return Error("invalid types: %s * %s", left.Type(), right.Type())
 }
 
+func Index(obj object.Object, index object.Object) object.Object {
+	switch {
+	case obj.Type() == object.ARRAY && index.Type() == object.INTEGER:
+		array := obj.(*object.Array)
+		i := index.(*object.Integer).Value
+		if i < 0 || i > int64(len(array.Elements)-1) {
+			return NULL
+		}
+		return array.Elements[i]
+	case obj.Type() == object.ARRAY && index.Type() == object.SLICE:
+		array := obj.(*object.Array)
+		slice := index.(*object.Slice)
+		return sliceIndex(array, slice)
+	case obj.Type() == object.HASH:
+		return hashIndex(obj, index)
+	}
+	return Error("index operator not supported: %s", obj.Type())
+}
+
+func sliceIndex(array *object.Array, sliceObj *object.Slice) object.Object {
+	var end int64
+	if sliceObj.End == nil {
+		end = int64(len(array.Elements))
+	} else {
+		end = *sliceObj.End
+	}
+
+	return SliceArray(array, sliceObj.Start, end)
+}
+
+func hashIndex(hash, index object.Object) object.Object {
+	hashObject := hash.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return Error("cannot use as hash key: %s", index.Type())
+	}
+
+	pair, ok := hashObject.Pairs[key.Hash()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
+}
+
 func SliceArray(array *object.Array, start int64, end int64) object.Object {
 	if start < 0 {
 		start = 0
