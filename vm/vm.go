@@ -12,24 +12,28 @@ import (
 )
 
 type VM struct {
-	constants    []object.Object
-	instructions code.Instructions
+	constants []object.Object
 
 	stack []object.Object
 	sp    int
 
 	globals []object.Object
+
+	frames []*Frame
 }
 
 func New(bytecode *compiler.Bytecode) *VM {
+	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
+
 	return &VM{
-		instructions: bytecode.Instructions,
-		constants:    bytecode.Constants,
+		constants: bytecode.Constants,
 
 		stack: make([]object.Object, 1),
 		sp:    0,
 
 		globals: make([]object.Object, bytecode.GlobalsSize),
+
+		frames: []*Frame{NewFrame(mainFn)},
 	}
 }
 
@@ -51,25 +55,33 @@ func (vm *VM) StackAboveTop() object.Object {
 }
 
 func (vm *VM) Run() error {
-	for ip := 0; ip < len(vm.instructions); ip++ {
-		op := code.Opcode(vm.instructions[ip])
+	var ip int
+	var ins code.Instructions
+	var op code.Opcode
+
+	for vm.frame().ip < len(vm.frame().Instructions())-1 {
+		vm.frame().ip++
+
+		ip = vm.frame().ip
+		ins = vm.frame().Instructions()
+		op = code.Opcode(ins[ip])
 
 		switch op {
 		case code.OpConstant:
-			idx := code.ReadUint16(vm.instructions[ip+1:])
-			ip += 2
+			idx := code.ReadUint16(ins[ip+1:])
+			vm.frame().ip += 2
 
 			vm.push(vm.constants[idx])
 		case code.OpPop:
 			vm.sp--
 		case code.OpGetGlobal:
-			index := code.ReadUint16(vm.instructions[ip+1:])
-			ip += 2
+			index := code.ReadUint16(ins[ip+1:])
+			vm.frame().ip += 2
 
 			vm.push(vm.globals[index])
 		case code.OpSetGlobal:
-			index := code.ReadUint16(vm.instructions[ip+1:])
-			ip += 2
+			index := code.ReadUint16(ins[ip+1:])
+			vm.frame().ip += 2
 
 			vm.globals[index] = vm.pop()
 		case code.OpNull:
@@ -79,8 +91,8 @@ func (vm *VM) Run() error {
 		case code.OpTrue:
 			vm.push(lib.TRUE)
 		case code.OpArray:
-			n := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip += 2
+			n := int(code.ReadUint16(ins[ip+1:]))
+			vm.frame().ip += 2
 
 			start, end := vm.sp-n, vm.sp
 			elements := make([]object.Object, end-start)
@@ -90,8 +102,8 @@ func (vm *VM) Run() error {
 			vm.stack[vm.sp] = &object.Array{Elements: elements}
 			vm.sp++
 		case code.OpHash:
-			npairs := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip += 2
+			npairs := int(code.ReadUint16(ins[ip+1:]))
+			vm.frame().ip += 2
 
 			start, end := vm.sp-npairs*2, vm.sp
 			pairs := make(map[object.HashKey]object.HashPair)
@@ -124,14 +136,14 @@ func (vm *VM) Run() error {
 			vm.sp--
 			vm.stack[vm.sp-1] = result
 		case code.OpBranch:
-			pos := int(code.ReadUint16(vm.instructions[ip+1:]))
-			ip = pos - 1
+			pos := int(code.ReadUint16(ins[ip+1:]))
+			vm.frame().ip = pos - 1
 		case code.OpBranchNotEqual:
 			if !lib.IsTruthy(vm.pop()) {
-				pos := int(code.ReadUint16(vm.instructions[ip+1:]))
-				ip = pos - 1
+				pos := int(code.ReadUint16(ins[ip+1:]))
+				vm.frame().ip = pos - 1
 			} else {
-				ip += 2
+				vm.frame().ip += 2
 			}
 		case code.OpAdd, code.OpSub, code.OpMul, code.OpDiv,
 			code.OpEqual, code.OpNotEqual, code.OpLessThan:
@@ -206,6 +218,20 @@ func executeIntegerOp(op code.Opcode, left, right *object.Integer) object.Object
 		return lib.Boolean(left.Value < right.Value)
 	}
 	return lib.Error("unknown operator: %s %s %s", left.Type(), fmtOp(op), right.Type())
+}
+
+func (vm *VM) frame() *Frame {
+	return vm.frames[len(vm.frames)-1]
+}
+
+func (vm *VM) pushFrame(f *Frame) {
+	vm.frames = append(vm.frames, f)
+}
+
+func (vm *VM) popFrame() *Frame {
+	f := vm.frame()
+	vm.frames = vm.frames[:len(vm.frames)-1]
+	return f
 }
 
 func fmtOp(op code.Opcode) string {
