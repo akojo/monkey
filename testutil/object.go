@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 
+	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
 )
@@ -25,6 +26,8 @@ func ExpectObject(actual object.Object, expected any) error {
 		return expectError(actual, e.Error())
 	case nil:
 		return expectNull(actual)
+	case code.Instructions:
+		return expectCompiledFunction(actual, e)
 	default:
 		panic(fmt.Sprintf("invalid type %T", e))
 	}
@@ -121,6 +124,34 @@ func expectNull(actual object.Object) error {
 	if actual != lib.NULL {
 		return fmt.Errorf("expected NULL, got %q", actual.Inspect())
 	}
+	return nil
+}
+
+func expectCompiledFunction(actual object.Object, expected code.Instructions) error {
+	fn, err := assertType[*object.CompiledFunction](actual)
+	if err != nil {
+		return err
+	}
+
+	err = expectInstructions(fn.Instructions, expected)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func expectInstructions(actual, expected code.Instructions) error {
+	if len(expected) != len(actual) {
+		return fmt.Errorf("instructions:\n  want %d  %q\n  got  %d  %q", len(expected), expected, len(actual), actual)
+	}
+
+	for i, ins := range expected {
+		if actual[i] != ins {
+			return fmt.Errorf("wrong instruction at %d:\n  want %02x  %q\n  got  %02x  %q", i, ins, expected, actual[i], actual)
+		}
+	}
+
 	return nil
 }
 

@@ -8,22 +8,24 @@ import (
 	"strings"
 
 	"github.com/akojo/monkey/ast"
+	"github.com/akojo/monkey/code"
 )
 
 type ObjectType string
 
 const (
-	ARRAY    = "ARRAY"
-	BOOLEAN  = "BOOLEAN"
-	BUILTIN  = "BUILTIN"
-	ERROR    = "ERROR"
-	FUNCTION = "FUNCTION"
-	HASH     = "HASH"
-	INTEGER  = "INTEGER"
-	NULL     = "NULL"
-	RETURN   = "RETURN"
-	SLICE    = "SLICE"
-	STRING   = "STRING"
+	ARRAY             = "ARRAY"
+	BOOLEAN           = "BOOLEAN"
+	BUILTIN           = "BUILTIN"
+	ERROR             = "ERROR"
+	FUNCTION          = "FUNCTION"
+	HASH              = "HASH"
+	INTEGER           = "INTEGER"
+	NULL              = "NULL"
+	RETURN            = "RETURN"
+	SLICE             = "SLICE"
+	STRING            = "STRING"
+	COMPILED_FUNCTION = "COMPILED_FUNCTION"
 )
 
 type Object interface {
@@ -161,4 +163,13 @@ func (s *String) Hash() HashKey {
 	h := fnv.New64a()
 	h.Write([]byte(s.Value))
 	return HashKey{Type: STRING, Value: h.Sum64()}
+}
+
+type CompiledFunction struct {
+	Instructions code.Instructions
+}
+
+func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION }
+func (cf *CompiledFunction) Inspect() string {
+	return fmt.Sprintf("CompiledFunction[%p]", cf)
 }

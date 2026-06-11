@@ -16,6 +16,52 @@ import (
 
 type constant any
 
+func TestCompilerScopes(t *testing.T) {
+	compiler := New()
+	if compiler.currentScope != 0 {
+		t.Errorf("scopeIndex: want 0, got %d", compiler.currentScope)
+	}
+
+	compiler.emit(code.OpMul)
+
+	compiler.enterScope()
+	if compiler.currentScope != 1 {
+		t.Errorf("scopeIndex: want 1, got %d", compiler.currentScope)
+	}
+
+	compiler.emit(code.OpSub)
+
+	if len(compiler.scopes[compiler.currentScope].instructions) != 1 {
+		t.Errorf("len(instructions): want 1, got %d", len(compiler.scopes[compiler.currentScope].instructions))
+	}
+
+	current := compiler.scopes[compiler.currentScope].currentInstruction
+	if current.Opcode != code.OpSub {
+		t.Errorf("currentInstruction.Opcode: want %d, got %d", code.OpSub, current.Opcode)
+	}
+
+	compiler.leaveScope()
+	if compiler.currentScope != 0 {
+		t.Errorf("scopeIndex: want 0, got %d", compiler.currentScope)
+	}
+
+	compiler.emit(code.OpAdd)
+
+	if len(compiler.scopes[compiler.currentScope].instructions) != 2 {
+		t.Errorf("len(instructions): want 2, got %d", len(compiler.scopes[compiler.currentScope].instructions))
+	}
+
+	current = compiler.scopes[compiler.currentScope].currentInstruction
+	if current.Opcode != code.OpAdd {
+		t.Errorf("currentInstruction.Opcode: want %d, got %d", code.OpAdd, current.Opcode)
+	}
+
+	previous := compiler.scopes[compiler.currentScope].previousInstruction
+	if previous.Opcode != code.OpMul {
+		t.Errorf("currentInstruction.Opcode: want %d, got %d", code.OpMul, previous.Opcode)
+	}
+}
+
 func TestIntegerArithmetic(t *testing.T) {
 	expect(t, "1 + 2", []constant{1, 2}, PUSH(0), PUSH(1), ADD, POP)
 	expect(t, "1 - 2", []constant{1, 2}, PUSH(0), PUSH(1), SUB, POP)
@@ -88,6 +134,22 @@ func TestIndexExpressions(t *testing.T) {
 		PUSH(0), PUSH(1), HASH(1), PUSH(2), INDEX, POP)
 }
 
+func TestFunctions(t *testing.T) {
+	expect(t, "fn() { return 5 + 10 }",
+		[]constant{5, 10, function(PUSH(0), PUSH(1), ADD, RETVAL)},
+		PUSH(2), POP)
+
+	expect(t, "fn() { 5 + 10 }",
+		[]constant{5, 10, function(PUSH(0), PUSH(1), ADD, RETVAL)},
+		PUSH(2), POP)
+
+	expect(t, "fn() { 1; 2 }",
+		[]constant{1, 2, function(PUSH(0), POP, PUSH(1), RETVAL)},
+		PUSH(2), POP)
+
+	expect(t, "fn() {}", []constant{function(NULL, RETVAL)}, PUSH(0), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -146,6 +208,10 @@ func parse(input string) *ast.Program {
 	return p.ParseProgram()
 }
 
+func function(instructions ...code.Instructions) code.Instructions {
+	return slices.Concat(instructions...)
+}
+
 func PUSH(index int) code.Instructions {
 	return code.Make(code.OpConstant, index)
 }
@@ -194,3 +260,7 @@ var DIV = code.Make(code.OpDiv)
 
 var NEG = code.Make(code.OpMinus)
 var NOT = code.Make(code.OpBang)
+
+var CALL = code.Make(code.OpCall)
+var RET = code.Make(code.OpReturn)
+var RETVAL = code.Make(code.OpReturnValue)

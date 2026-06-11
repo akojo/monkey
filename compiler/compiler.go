@@ -15,25 +15,37 @@ type EmittedInstruction struct {
 	Position int
 }
 
-type Compiler struct {
+type CompilationScope struct {
 	instructions code.Instructions
-	constants    []object.Object
 
 	currentInstruction  EmittedInstruction
 	previousInstruction EmittedInstruction
+}
+
+type Compiler struct {
+	constants []object.Object
 
 	symbolTable *SymbolTable
+
+	scopes       []CompilationScope
+	currentScope int
 }
 
 const INVALID_OFFSET = 65535
 
 func New() *Compiler {
-	return &Compiler{
+	mainScope := CompilationScope{
 		instructions:        code.Instructions{},
-		constants:           []object.Object{},
 		currentInstruction:  EmittedInstruction{},
 		previousInstruction: EmittedInstruction{},
-		symbolTable:         NewSymbolTable(),
+	}
+
+	return &Compiler{
+		constants:   []object.Object{},
+		symbolTable: NewSymbolTable(),
+
+		scopes:       []CompilationScope{mainScope},
+		currentScope: 0,
 	}
 }
 
@@ -183,7 +195,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		jumpToEnd := c.emit(code.OpBranch, INVALID_OFFSET)
 
-		c.replaceOperands(jumpToElse, len(c.instructions))
+		c.replaceOperands(jumpToElse, len(c.instructions()))
 
 		if node.Alternative == nil {
 			c.emit(code.OpNull)
@@ -194,7 +206,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 
-		c.replaceOperands(jumpToEnd, len(c.instructions))
+		c.replaceOperands(jumpToEnd, len(c.instructions()))
 	case *ast.Identifier:
 		symbol, ok := c.symbolTable.Resolve(node.Value)
 		if !ok {
@@ -202,6 +214,33 @@ func (c *Compiler) Compile(node ast.Node) error {
 		}
 
 		c.emit(code.OpGetGlobal, symbol.Index)
+	case *ast.FunctionLiteral:
+		c.enterScope()
+
+		err := c.Compile(node.Body)
+		if err != nil {
+			return err
+		}
+
+		if c.currentInstruction().Opcode == code.OpPop {
+			c.replaceLastPopWithReturn()
+		}
+
+		if c.currentInstruction().Opcode != code.OpReturnValue {
+			c.emit(code.OpReturnValue)
+		}
+
+		instructions := c.leaveScope()
+
+		compiledFn := &object.CompiledFunction{Instructions: instructions}
+		c.emit(code.OpConstant, c.addConstant(compiledFn))
+	case *ast.ReturnStatement:
+		err := c.Compile(node.ReturnValue)
+		if err != nil {
+			return err
+		}
+
+		c.emit(code.OpReturnValue)
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}
@@ -215,7 +254,7 @@ func (c *Compiler) compileBlockExpression(stmt *ast.BlockStatement) error {
 	}
 
 	// keep last value of block expression on the stack
-	if c.currentInstruction.Opcode == code.OpPop {
+	if c.currentInstruction().Opcode == code.OpPop {
 		c.removeCurrent()
 	}
 
@@ -234,7 +273,7 @@ func (c *Compiler) CompileN(nodes ...ast.Node) error {
 
 func (c *Compiler) Bytecode() *Bytecode {
 	return &Bytecode{
-		Instructions: c.instructions,
+		Instructions: c.instructions(),
 		Constants:    c.constants,
 		GlobalsSize:  len(c.symbolTable.store),
 	}
@@ -244,8 +283,9 @@ func (c *Compiler) emit(op code.Opcode, operands ...int) int {
 	ins := code.Make(op, operands...)
 	pos := c.add(ins)
 
-	c.previousInstruction = c.currentInstruction
-	c.currentInstruction = EmittedInstruction{Opcode: op, Position: pos}
+	scope := c.scopes[c.currentScope]
+	c.scopes[c.currentScope].previousInstruction = scope.currentInstruction
+	c.scopes[c.currentScope].currentInstruction = EmittedInstruction{Opcode: op, Position: pos}
 
 	return pos
 }
@@ -257,22 +297,61 @@ func (c *Compiler) addConstant(obj object.Object) int {
 }
 
 func (c *Compiler) add(ins []byte) int {
-	pos := len(c.instructions)
-	c.instructions = append(c.instructions, ins...)
+	instructions := c.instructions()
+	pos := len(instructions)
+
+	c.scopes[c.currentScope].instructions = append(instructions, ins...)
 	return pos
 }
 
+func (c *Compiler) instructions() code.Instructions {
+	return c.scopes[c.currentScope].instructions
+}
+
+func (c *Compiler) currentInstruction() EmittedInstruction {
+	return c.scopes[c.currentScope].currentInstruction
+}
+
 func (c *Compiler) removeCurrent() {
-	c.instructions = c.instructions[:c.currentInstruction.Position]
-	c.currentInstruction = c.previousInstruction
+	scope := c.scopes[c.currentScope]
+	c.scopes[c.currentScope].instructions = scope.instructions[:scope.currentInstruction.Position]
+	c.scopes[c.currentScope].currentInstruction = scope.previousInstruction
 }
 
 func (c *Compiler) replaceOperands(pos int, operand ...int) {
 	// Get the current op to calculate correct operand lengths
-	op := code.Opcode(c.instructions[pos])
+	instructions := c.instructions()
+	op := code.Opcode(instructions[pos])
 	instruction := code.Make(op, operand...)
 
-	copy(c.instructions[pos+1:], instruction[1:])
+	copy(instructions[pos+1:], instruction[1:])
+}
+
+func (c *Compiler) replaceLastPopWithReturn() {
+	pos := c.scopes[c.currentScope].currentInstruction.Position
+	returnValue := code.Make(code.OpReturnValue)
+	copy(c.scopes[c.currentScope].instructions[pos:], returnValue)
+
+	c.scopes[c.currentScope].currentInstruction.Opcode = code.OpReturnValue
+}
+
+func (c *Compiler) enterScope() {
+	scope := CompilationScope{
+		instructions:        code.Instructions{},
+		currentInstruction:  EmittedInstruction{},
+		previousInstruction: EmittedInstruction{},
+	}
+	c.scopes = append(c.scopes, scope)
+	c.currentScope++
+}
+
+func (c *Compiler) leaveScope() code.Instructions {
+	instructions := c.instructions()
+
+	c.scopes = c.scopes[:len(c.scopes)-1]
+	c.currentScope--
+
+	return instructions
 }
 
 type Bytecode struct {

@@ -40,6 +40,10 @@ const (
 
 	OpMinus
 	OpBang
+
+	OpCall
+	OpReturn
+	OpReturnValue
 )
 
 type Definition struct {
@@ -77,6 +81,10 @@ var definitions = map[Opcode]*Definition{
 
 	OpMinus: {"NEG", []int{}},
 	OpBang:  {"NOT", []int{}},
+
+	OpCall:        {"CALL", []int{}},
+	OpReturn:      {"RET", []int{}},
+	OpReturnValue: {"RETVAL", []int{}},
 }
 
 func Lookup(op byte) (*Definition, error) {
