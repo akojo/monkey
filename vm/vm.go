@@ -166,6 +166,19 @@ func (vm *VM) Run() error {
 		case code.OpBang:
 			top := vm.stack[vm.sp-1]
 			vm.stack[vm.sp-1] = lib.Boolean(top == lib.FALSE || top == lib.NULL)
+		case code.OpCall:
+			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
+			if !ok {
+				return fmt.Errorf("calling non-function: %T", vm.stack[vm.sp-1].Type())
+			}
+			frame := NewFrame(fn)
+			vm.pushFrame(frame)
+		case code.OpReturnValue:
+			returnValue := vm.pop()
+
+			vm.popFrame()
+
+			vm.stack[vm.sp-1] = returnValue
 		default:
 			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
