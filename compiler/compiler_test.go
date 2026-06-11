@@ -150,6 +150,16 @@ func TestFunctions(t *testing.T) {
 	expect(t, "fn() {}", []constant{function(NULL, RETVAL)}, PUSH(0), POP)
 }
 
+func TestFunctionCalls(t *testing.T) {
+	expect(t, "fn() { 24 }();",
+		[]constant{24, function(PUSH(0), RETVAL)},
+		PUSH(1), CALL, POP)
+
+	expect(t, "let f = fn() { 24 }; f();",
+		[]constant{24, function(PUSH(0), RETVAL)},
+		PUSH(1), SETG(0), GETG(0), CALL, POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
