@@ -16,6 +16,8 @@ const (
 
 	OpGetGlobal
 	OpSetGlobal
+	OpGetLocal
+	OpSetLocal
 
 	OpNull
 
@@ -57,6 +59,8 @@ var definitions = map[Opcode]*Definition{
 
 	OpGetGlobal: {"GETG", []int{2}},
 	OpSetGlobal: {"SETG", []int{2}},
+	OpGetLocal:  {"GET", []int{1}},
+	OpSetLocal:  {"SET", []int{1}},
 
 	OpNull: {"NULL", []int{}},
 
@@ -104,6 +108,8 @@ func Make(op Opcode, operands ...int) []byte {
 	instruction := []byte{byte(op)}
 	for i, operand := range operands {
 		switch def.OperandWidths[i] {
+		case 1:
+			instruction = append(instruction, byte(operand))
 		case 2:
 			instruction = binary.NativeEndian.AppendUint16(instruction, uint16(operand))
 		}
@@ -154,6 +160,8 @@ func ReadOperands(def *Definition, instructions Instructions) ([]int, int) {
 
 	for i, width := range def.OperandWidths {
 		switch width {
+		case 1:
+			operands[i] = int(ReadUint8(instructions[offset:]))
 		case 2:
 			operands[i] = int(ReadUint16(instructions[offset:]))
 		}
@@ -161,6 +169,10 @@ func ReadOperands(def *Definition, instructions Instructions) ([]int, int) {
 	}
 
 	return operands, offset
+}
+
+func ReadUint8(ins Instructions) uint8 {
+	return ins[0]
 }
 
 func ReadUint16(ins Instructions) uint16 {
