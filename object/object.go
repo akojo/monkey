@@ -167,6 +167,7 @@ func (s *String) Hash() HashKey {
 
 type CompiledFunction struct {
 	Instructions code.Instructions
+	Locals       int
 }
 
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION }

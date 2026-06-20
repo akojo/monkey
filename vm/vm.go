@@ -33,7 +33,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 		globals: make([]object.Object, bytecode.GlobalsSize),
 
-		frames: []*Frame{NewFrame(mainFn)},
+		frames: []*Frame{NewFrame(mainFn, 0)},
 	}
 }
 
@@ -84,6 +84,16 @@ func (vm *VM) Run() error {
 			vm.frame().ip += 2
 
 			vm.globals[index] = vm.pop()
+		case code.OpGetLocal:
+			index := int(code.ReadUint8(ins[ip+1:]))
+			vm.frame().ip += 1
+
+			vm.push(vm.stack[vm.frame().fp+index])
+		case code.OpSetLocal:
+			index := int(code.ReadUint8(ins[ip+1:]))
+			vm.frame().ip += 1
+
+			vm.stack[vm.frame().fp+index] = vm.pop()
 		case code.OpNull:
 			vm.push(lib.NULL)
 		case code.OpFalse:
@@ -171,12 +181,16 @@ func (vm *VM) Run() error {
 			if !ok {
 				return fmt.Errorf("calling non-function: %T", vm.stack[vm.sp-1].Type())
 			}
-			frame := NewFrame(fn)
+			frame := NewFrame(fn, vm.sp)
 			vm.pushFrame(frame)
+
+			vm.sp = frame.fp
+			vm.alloc(fn.Locals)
 		case code.OpReturnValue:
 			returnValue := vm.pop()
 
-			vm.popFrame()
+			frame := vm.popFrame()
+			vm.sp = frame.fp
 
 			vm.stack[vm.sp-1] = returnValue
 		default:
@@ -186,9 +200,18 @@ func (vm *VM) Run() error {
 	return nil
 }
 
+// allocate n slots from the top of the stack
+func (vm *VM) alloc(n int) {
+	for len(vm.stack) <= vm.sp+n {
+		vm.stack = slices.Grow(vm.stack, len(vm.stack))
+		vm.stack = vm.stack[:cap(vm.stack)]
+	}
+	vm.sp += n
+}
+
 func (vm *VM) push(obj object.Object) {
 	if vm.sp == len(vm.stack) {
-		vm.stack = slices.Grow(vm.stack, vm.sp)
+		vm.stack = slices.Grow(vm.stack, len(vm.stack))
 		vm.stack = vm.stack[:cap(vm.stack)]
 	}
 

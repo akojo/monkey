@@ -8,10 +8,11 @@ import (
 type Frame struct {
 	fn *object.CompiledFunction
 	ip int
+	fp int
 }
 
-func NewFrame(fn *object.CompiledFunction) *Frame {
-	return &Frame{fn: fn, ip: -1}
+func NewFrame(fn *object.CompiledFunction, fp int) *Frame {
+	return &Frame{fn: fn, ip: -1, fp: fp}
 }
 
 func (f *Frame) Instructions() code.Instructions {

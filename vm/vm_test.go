@@ -147,6 +147,26 @@ func TestFunctionCall(t *testing.T) {
 	expect(t, "let f1 = fn() { 1 }; let f2 = fn() { f1 }; f2()()", 1)
 }
 
+func TestVariableScoping(t *testing.T) {
+	expect(t, "fn() { let one = 1; one }();", 1)
+	expect(t, "fn() { let one = 1; let two = 2; one + two }();", 3)
+	expect(t, `
+		let first = fn() { let foo = 50; foo }
+		let second = fn() { let foo = 100; foo }
+		first() + second()
+	`, 150)
+	expect(t, `
+		let seed = 50
+		let minusOne = fn() { let num = 1; seed - num }
+		let minusTwo = fn() { let num = 2; seed - num }
+		minusOne() - minusTwo()
+	`, 1)
+	expect(t, `
+		let f = fn() { let one = fn() { return 1 }; one }
+		f()()
+	`, 1)
+}
+
 func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 

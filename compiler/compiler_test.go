@@ -21,6 +21,7 @@ func TestCompilerScopes(t *testing.T) {
 	if compiler.currentScope != 0 {
 		t.Errorf("scopeIndex: want 0, got %d", compiler.currentScope)
 	}
+	globalSymbolTable := compiler.symbolTable
 
 	compiler.emit(code.OpMul)
 
@@ -40,9 +41,20 @@ func TestCompilerScopes(t *testing.T) {
 		t.Errorf("currentInstruction.Opcode: want %d, got %d", code.OpSub, current.Opcode)
 	}
 
+	if compiler.symbolTable.Outer != globalSymbolTable {
+		t.Error("global symbol table is not enclosed")
+	}
+
 	compiler.leaveScope()
 	if compiler.currentScope != 0 {
 		t.Errorf("scopeIndex: want 0, got %d", compiler.currentScope)
+	}
+
+	if compiler.symbolTable != globalSymbolTable {
+		t.Error("expected global symbol table")
+	}
+	if compiler.symbolTable.Outer != nil {
+		t.Error("global symbol table should not have outer symbol table")
 	}
 
 	compiler.emit(code.OpAdd)
@@ -160,6 +172,20 @@ func TestFunctionCalls(t *testing.T) {
 		PUSH(1), SETG(0), GETG(0), CALL, POP)
 }
 
+func TestLetStatementScopes(t *testing.T) {
+	expect(t, "let num = 55; fn() { num }",
+		[]constant{55, function(GETG(0), RETVAL)},
+		PUSH(0), SETG(0), PUSH(1), POP)
+
+	expect(t, "fn() { let num = 55; num }",
+		[]constant{55, function(PUSH(0), SET(0), GET(0), RETVAL)},
+		PUSH(1), POP)
+
+	expect(t, "fn() { let a = 55; let b = 77; a + b }",
+		[]constant{55, 77, function(PUSH(0), SET(0), PUSH(1), SET(1), GET(0), GET(1), ADD, RETVAL)},
+		PUSH(2), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -234,6 +260,14 @@ func GETG(index int) code.Instructions {
 
 func SETG(index int) code.Instructions {
 	return code.Make(code.OpSetGlobal, index)
+}
+
+func GET(index int) code.Instructions {
+	return code.Make(code.OpGetLocal, index)
+}
+
+func SET(index int) code.Instructions {
+	return code.Make(code.OpSetLocal, index)
 }
 
 var NULL = code.Make(code.OpNull)
