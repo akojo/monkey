@@ -225,6 +225,10 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.FunctionLiteral:
 		c.enterScope()
 
+		for _, param := range node.Parameters {
+			c.symbolTable.Define(param.Value)
+		}
+
 		err := c.Compile(node.Body)
 		if err != nil {
 			return err
@@ -241,7 +245,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		locals := len(c.symbolTable.store)
 		instructions := c.leaveScope()
 
-		compiledFn := &object.CompiledFunction{Instructions: instructions, Locals: locals}
+		compiledFn := &object.CompiledFunction{
+			Instructions: instructions,
+			Locals:       locals,
+			Parameters:   len(node.Parameters),
+		}
 		c.emit(code.OpConstant, c.addConstant(compiledFn))
 	case *ast.ReturnStatement:
 		err := c.Compile(node.ReturnValue)
@@ -256,7 +264,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		c.emit(code.OpCall)
+		for _, arg := range node.Arguments {
+			if err := c.Compile(arg); err != nil {
+				return err
+			}
+		}
+
+		c.emit(code.OpCall, len(node.Arguments))
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}

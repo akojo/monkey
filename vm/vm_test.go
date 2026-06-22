@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -145,6 +146,30 @@ func TestFunctionCall(t *testing.T) {
 	expect(t, "let f = fn() {}; let f2 = fn() { f() }; f2()", nil)
 
 	expect(t, "let f1 = fn() { 1 }; let f2 = fn() { f1 }; f2()()", 1)
+
+	expect(t, "let f = fn(a) { a }; f(4);", 4)
+	expect(t, "let f = fn(a, b) { a + b }; f(24, 25);", 49)
+	expect(t, "let f = fn(a, b) { let c = a + b; c }; f(1, 2);", 3)
+	expect(t, "let f = fn(a, b) { let c = a + b; c }; f(1, 2) + f(3, 4);", 10)
+	expect(t, "let f = fn(a) { let b = 1; a + b}; f(2)", 3)
+	expect(t, `
+		let global = 10;
+
+		let sum = fn(a, b) {
+			let c = a + b;
+			c + global;
+		}
+
+		let outer = fn() {
+			sum(1, 2) + sum(3, 4) + global;
+		}
+
+		outer() + global;
+	`, 50)
+
+	expect(t, "fn() { 1; }(1)", errors.New("wrong number of arguments: want 0, got 1"))
+	expect(t, "fn(a) { a; }()", errors.New("wrong number of arguments: want 1, got 0"))
+	expect(t, "fn(a, b) { a + b; }(1)", errors.New("wrong number of arguments: want 2, got 1"))
 }
 
 func TestVariableScoping(t *testing.T) {
@@ -181,6 +206,13 @@ func expect(t *testing.T, input string, expected any) {
 	vm := New(comp.Bytecode())
 	err = vm.Run()
 	if err != nil {
+		switch e := expected.(type) {
+		case error:
+			if e.Error() != err.Error() {
+				t.Errorf("vm error: expected %q got %q", e.Error(), err.Error())
+			}
+			return
+		}
 		t.Fatalf("vm error: %s", err)
 	}
 

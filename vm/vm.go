@@ -177,15 +177,13 @@ func (vm *VM) Run() error {
 			top := vm.stack[vm.sp-1]
 			vm.stack[vm.sp-1] = lib.Boolean(top == lib.FALSE || top == lib.NULL)
 		case code.OpCall:
-			fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
-			if !ok {
-				return fmt.Errorf("calling non-function: %T", vm.stack[vm.sp-1].Type())
-			}
-			frame := NewFrame(fn, vm.sp)
-			vm.pushFrame(frame)
+			nargs := int(code.ReadUint8(ins[ip+1:]))
+			vm.frame().ip += 1
 
-			vm.sp = frame.fp
-			vm.alloc(fn.Locals)
+			err := vm.call(nargs)
+			if err != nil {
+				return err
+			}
 		case code.OpReturnValue:
 			returnValue := vm.pop()
 
@@ -197,6 +195,26 @@ func (vm *VM) Run() error {
 			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
 	}
+	return nil
+}
+
+func (vm *VM) call(nargs int) error {
+	vm.sp -= nargs
+
+	fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("calling non-function: %T", vm.stack[vm.sp-1].Type())
+	}
+
+	if nargs != fn.Parameters {
+		return fmt.Errorf("wrong number of arguments: want %d, got %d", fn.Parameters, nargs)
+	}
+
+	frame := NewFrame(fn, vm.sp)
+	vm.pushFrame(frame)
+
+	vm.sp = frame.fp
+	vm.alloc(fn.Locals)
 	return nil
 }
 

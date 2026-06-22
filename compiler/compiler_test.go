@@ -165,11 +165,27 @@ func TestFunctions(t *testing.T) {
 func TestFunctionCalls(t *testing.T) {
 	expect(t, "fn() { 24 }();",
 		[]constant{24, function(PUSH(0), RETVAL)},
-		PUSH(1), CALL, POP)
+		PUSH(1), CALL(0), POP)
 
 	expect(t, "let f = fn() { 24 }; f();",
 		[]constant{24, function(PUSH(0), RETVAL)},
-		PUSH(1), SETG(0), GETG(0), CALL, POP)
+		PUSH(1), SETG(0), GETG(0), CALL(0), POP)
+
+	expect(t, "let f = fn(a) { }; f(24);",
+		[]constant{function(NULL, RETVAL), 24},
+		PUSH(0), SETG(0), GETG(0), PUSH(1), CALL(1), POP)
+
+	expect(t, "let f = fn(a, b, c) { }; f(24, 25, 26);",
+		[]constant{function(NULL, RETVAL), 24, 25, 26},
+		PUSH(0), SETG(0), GETG(0), PUSH(1), PUSH(2), PUSH(3), CALL(3), POP)
+
+	expect(t, "let f = fn(a) { a }; f(24);",
+		[]constant{function(GET(0), RETVAL), 24},
+		PUSH(0), SETG(0), GETG(0), PUSH(1), CALL(1), POP)
+
+	expect(t, "let f = fn(a, b) { a + b }; f(24, 25);",
+		[]constant{function(GET(0), GET(1), ADD, RETVAL), 24, 25},
+		PUSH(0), SETG(0), GETG(0), PUSH(1), PUSH(2), CALL(2), POP)
 }
 
 func TestLetStatementScopes(t *testing.T) {
@@ -305,6 +321,9 @@ var DIV = code.Make(code.OpDiv)
 var NEG = code.Make(code.OpMinus)
 var NOT = code.Make(code.OpBang)
 
-var CALL = code.Make(code.OpCall)
+func CALL(nargs int) code.Instructions {
+	return code.Make(code.OpCall, nargs)
+}
+
 var RET = code.Make(code.OpReturn)
 var RETVAL = code.Make(code.OpReturnValue)

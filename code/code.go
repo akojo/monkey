@@ -86,7 +86,7 @@ var definitions = map[Opcode]*Definition{
 	OpMinus: {"NEG", []int{}},
 	OpBang:  {"NOT", []int{}},
 
-	OpCall:        {"CALL", []int{}},
+	OpCall:        {"CALL", []int{1}},
 	OpReturn:      {"RET", []int{}},
 	OpReturnValue: {"RETVAL", []int{}},
 }
