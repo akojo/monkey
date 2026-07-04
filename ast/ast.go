@@ -43,7 +43,8 @@ func (p *Program) PrettyPrint(level int) string {
 	var out bytes.Buffer
 
 	for _, stmt := range p.Statements {
-		out.WriteString(stmt.PrettyPrint(level) + ";\n")
+		out.WriteString(stmt.PrettyPrint(level))
+		out.WriteString(";\n")
 	}
 
 	return out.String()
@@ -191,7 +192,8 @@ func (bs *BlockStatement) PrettyPrint(level int) string {
 	for _, s := range bs.Statements {
 		fmt.Fprintf(&out, "%s;\n", s.PrettyPrint(level+1))
 	}
-	out.WriteString(indent(level) + "}")
+	out.WriteString(indent(level))
+	out.WriteString("}")
 	return out.String()
 }
 
@@ -299,7 +301,8 @@ func (hl *HashLiteral) PrettyPrint(level int) string {
 	for k, v := range hl.Pairs {
 		fmt.Fprintf(&out, "%s%s: %s,\n", indent(level+1), k.String(), v.String())
 	}
-	out.WriteString(indent(level) + "}")
+	out.WriteString(indent(level))
+	out.WriteString("}")
 
 	return out.String()
 }

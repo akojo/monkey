@@ -7,12 +7,12 @@ import (
 	"github.com/akojo/monkey/object"
 )
 
-var builtins = map[string]*object.Builtin{
-	"append": {Fn: builtin.Append},
-	"equals": {Fn: builtin.Equals},
-	"len":    {Fn: builtin.Len},
-	"print":  {Fn: builtin.Print},
-	"slice":  {Fn: builtin.Slice},
+var builtins = make(map[string]*object.Builtin)
+
+func init() {
+	for _, b := range builtin.Builtins {
+		builtins[b.Name] = b.Builtin
+	}
 }
 
 func Eval(node ast.Node, env *object.Environment) object.Object {

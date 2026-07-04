@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/evaluator"
 	"github.com/akojo/monkey/lexer"
@@ -27,6 +28,9 @@ func Start(in io.Reader, useEvaluator bool) {
 	constants := []object.Object{}
 	globals := []object.Object{}
 	symbolTable := compiler.NewSymbolTable()
+	for i, builtin := range builtin.Builtins {
+		symbolTable.DefineBuiltin(i, builtin.Name)
+	}
 
 	for {
 		fmt.Fprintf(os.Stdout, PROMPT)

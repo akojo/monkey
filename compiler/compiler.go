@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/akojo/monkey/ast"
+	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/object"
 )
@@ -40,9 +41,15 @@ func New() *Compiler {
 		previousInstruction: EmittedInstruction{},
 	}
 
+	symbolTable := NewSymbolTable()
+
+	for i, builtin := range builtin.Builtins {
+		symbolTable.DefineBuiltin(i, builtin.Name)
+	}
+
 	return &Compiler{
 		constants:   []object.Object{},
-		symbolTable: NewSymbolTable(),
+		symbolTable: symbolTable,
 
 		scopes:       []CompilationScope{mainScope},
 		currentScope: 0,
@@ -217,10 +224,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined variable '%s'", node.Value)
 		}
 
-		if symbol.Scope == GlobalScope {
+		switch symbol.Scope {
+		case GlobalScope:
 			c.emit(code.OpGetGlobal, symbol.Index)
-		} else {
+		case LocalScope:
 			c.emit(code.OpGetLocal, symbol.Index)
+		case BuiltinScope:
+			c.emit(code.OpGetBuiltin, symbol.Index)
 		}
 	case *ast.FunctionLiteral:
 		c.enterScope()

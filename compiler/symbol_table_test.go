@@ -142,3 +142,33 @@ func TestResolveNestedLocals(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveBuiltins(t *testing.T) {
+	global := NewSymbolTable()
+	firstLocal := NewEnclosedSymbolTable(global)
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+
+	expected := []Symbol{
+		{Name: "a", Scope: BuiltinScope, Index: 0},
+		{Name: "c", Scope: BuiltinScope, Index: 1},
+		{Name: "e", Scope: BuiltinScope, Index: 2},
+		{Name: "f", Scope: BuiltinScope, Index: 3},
+	}
+
+	for i, v := range expected {
+		global.DefineBuiltin(i, v.Name)
+	}
+
+	for _, table := range []*SymbolTable{global, firstLocal, secondLocal} {
+		for _, sym := range expected {
+			result, ok := table.Resolve(sym.Name)
+			if !ok {
+				t.Errorf("%s: not found", sym.Name)
+				continue
+			}
+			if result != sym {
+				t.Errorf("%s: want %+v, got %+v", sym.Name, sym, result)
+			}
+		}
+	}
+}

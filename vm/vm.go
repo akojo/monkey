@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/compiler"
 	"github.com/akojo/monkey/lib"
@@ -109,8 +110,7 @@ func (vm *VM) Run() error {
 			copy(elements, vm.stack[start:end])
 			vm.sp -= n
 
-			vm.stack[vm.sp] = &object.Array{Elements: elements}
-			vm.sp++
+			vm.push(&object.Array{Elements: elements})
 		case code.OpHash:
 			npairs := int(code.ReadUint16(ins[ip+1:]))
 			vm.frame().ip += 2
@@ -180,7 +180,7 @@ func (vm *VM) Run() error {
 			nargs := int(code.ReadUint8(ins[ip+1:]))
 			vm.frame().ip += 1
 
-			err := vm.call(nargs)
+			err := vm.executeCall(nargs)
 			if err != nil {
 				return err
 			}
@@ -191,6 +191,12 @@ func (vm *VM) Run() error {
 			vm.sp = frame.fp
 
 			vm.stack[vm.sp-1] = returnValue
+		case code.OpGetBuiltin:
+			index := code.ReadUint8(ins[ip+1:])
+			vm.frame().ip += 1
+
+			def := builtin.Builtins[index]
+			vm.push(def.Builtin)
 		default:
 			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
@@ -198,23 +204,37 @@ func (vm *VM) Run() error {
 	return nil
 }
 
-func (vm *VM) call(nargs int) error {
-	vm.sp -= nargs
-
-	fn, ok := vm.stack[vm.sp-1].(*object.CompiledFunction)
-	if !ok {
-		return fmt.Errorf("calling non-function: %T", vm.stack[vm.sp-1].Type())
+func (vm *VM) executeCall(nargs int) error {
+	fn := vm.stack[vm.sp-1-nargs]
+	switch fn := fn.(type) {
+	case *object.CompiledFunction:
+		return vm.callFunction(fn, nargs)
+	case *object.Builtin:
+		return vm.callBuiltin(fn, nargs)
+	default:
+		return fmt.Errorf("not callable: %s", fn.Type())
 	}
+}
 
+func (vm *VM) callFunction(fn *object.CompiledFunction, nargs int) error {
 	if nargs != fn.Parameters {
 		return fmt.Errorf("wrong number of arguments: want %d, got %d", fn.Parameters, nargs)
 	}
 
-	frame := NewFrame(fn, vm.sp)
+	frame := NewFrame(fn, vm.sp-nargs)
 	vm.pushFrame(frame)
 
 	vm.sp = frame.fp
 	vm.alloc(fn.Locals)
+	return nil
+}
+
+func (vm *VM) callBuiltin(fn *object.Builtin, nargs int) error {
+	args := vm.stack[vm.sp-nargs : vm.sp]
+	result := fn.Fn(args...)
+
+	vm.sp = vm.sp - nargs - 1
+	vm.push(result)
 	return nil
 }
 

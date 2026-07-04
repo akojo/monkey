@@ -192,6 +192,25 @@ func TestVariableScoping(t *testing.T) {
 	`, 1)
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	expect(t, `len("")`, 0)
+	expect(t, `len("mitä")`, 4)
+	expect(t, `len("💩")`, 1)
+	expect(t, `len("hello world")`, 11)
+	expect(t, "len(1)", errors.New("argument to `len` not supported, got INTEGER"))
+	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
+	expect(t, "len([1, 2, 3])", 3)
+	expect(t, "len([])", 0)
+
+	expect(t, "let a = append([1, 2], 3); a == [1, 2, 3]", true)
+	expect(t, "let a = append([], 1); a == [1]", true)
+	expect(t, "let a = append([], [1]); a == [[1]]", true)
+
+	expect(t, "equals(1, 1)", true)
+	expect(t, `equals("foo", "foo")`, true)
+	expect(t, "equals([1,2], [1,2])", true)
+}
+
 func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 

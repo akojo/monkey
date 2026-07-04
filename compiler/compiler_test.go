@@ -202,6 +202,16 @@ func TestLetStatementScopes(t *testing.T) {
 		PUSH(2), POP)
 }
 
+func TestBuiltins(t *testing.T) {
+	expect(t, "len([]); append([], 1);",
+		[]constant{1},
+		BUILTIN(2), ARRAY(0), CALL(1), POP, BUILTIN(0), ARRAY(0), PUSH(0), CALL(2), POP)
+
+	expect(t, "fn() { len([]); }",
+		[]constant{function(BUILTIN(2), ARRAY(0), CALL(1), RETVAL)},
+		PUSH(0), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -327,3 +337,7 @@ func CALL(nargs int) code.Instructions {
 
 var RET = code.Make(code.OpReturn)
 var RETVAL = code.Make(code.OpReturnValue)
+
+func BUILTIN(index int) code.Instructions {
+	return code.Make(code.OpGetBuiltin, index)
+}
