@@ -25,6 +25,7 @@ type VM struct {
 
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
+	mainClosure := &object.Closure{Fn: mainFn}
 
 	return &VM{
 		constants: bytecode.Constants,
@@ -34,7 +35,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 
 		globals: make([]object.Object, bytecode.GlobalsSize),
 
-		frames: []*Frame{NewFrame(mainFn, 0)},
+		frames: []*Frame{NewFrame(mainClosure, 0)},
 	}
 }
 
@@ -197,6 +198,15 @@ func (vm *VM) Run() error {
 
 			def := builtin.Builtins[index]
 			vm.push(def.Builtin)
+		case code.OpClosure:
+			index := code.ReadUint16(ins[ip+1:])
+			_ = code.ReadUint8(ins[ip+3:])
+			vm.frame().ip += 3
+
+			err := vm.pushClosure(index)
+			if err != nil {
+				return err
+			}
 		default:
 			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
@@ -207,7 +217,7 @@ func (vm *VM) Run() error {
 func (vm *VM) executeCall(nargs int) error {
 	fn := vm.stack[vm.sp-1-nargs]
 	switch fn := fn.(type) {
-	case *object.CompiledFunction:
+	case *object.Closure:
 		return vm.callFunction(fn, nargs)
 	case *object.Builtin:
 		return vm.callBuiltin(fn, nargs)
@@ -216,16 +226,16 @@ func (vm *VM) executeCall(nargs int) error {
 	}
 }
 
-func (vm *VM) callFunction(fn *object.CompiledFunction, nargs int) error {
-	if nargs != fn.Parameters {
-		return fmt.Errorf("wrong number of arguments: want %d, got %d", fn.Parameters, nargs)
+func (vm *VM) callFunction(cl *object.Closure, nargs int) error {
+	if nargs != cl.Fn.Parameters {
+		return fmt.Errorf("wrong number of arguments: want %d, got %d", cl.Fn.Parameters, nargs)
 	}
 
-	frame := NewFrame(fn, vm.sp-nargs)
+	frame := NewFrame(cl, vm.sp-nargs)
 	vm.pushFrame(frame)
 
 	vm.sp = frame.fp
-	vm.alloc(fn.Locals)
+	vm.alloc(cl.Fn.Locals)
 	return nil
 }
 
@@ -306,6 +316,17 @@ func (vm *VM) popFrame() *Frame {
 	f := vm.frame()
 	vm.frames = vm.frames[:len(vm.frames)-1]
 	return f
+}
+
+func (vm *VM) pushClosure(index uint16) error {
+	constant := vm.constants[index]
+	function, ok := constant.(*object.CompiledFunction)
+	if !ok {
+		return fmt.Errorf("not a function: %+v", constant)
+	}
+	closure := &object.Closure{Fn: function}
+	vm.push(closure)
+	return nil
 }
 
 func fmtOp(op code.Opcode) string {

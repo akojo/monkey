@@ -149,57 +149,57 @@ func TestIndexExpressions(t *testing.T) {
 func TestFunctions(t *testing.T) {
 	expect(t, "fn() { return 5 + 10 }",
 		[]constant{5, 10, function(PUSH(0), PUSH(1), ADD, RETVAL)},
-		PUSH(2), POP)
+		CLOSURE(2, 0), POP)
 
 	expect(t, "fn() { 5 + 10 }",
 		[]constant{5, 10, function(PUSH(0), PUSH(1), ADD, RETVAL)},
-		PUSH(2), POP)
+		CLOSURE(2, 0), POP)
 
 	expect(t, "fn() { 1; 2 }",
 		[]constant{1, 2, function(PUSH(0), POP, PUSH(1), RETVAL)},
-		PUSH(2), POP)
+		CLOSURE(2, 0), POP)
 
-	expect(t, "fn() {}", []constant{function(NULL, RETVAL)}, PUSH(0), POP)
+	expect(t, "fn() {}", []constant{function(NULL, RETVAL)}, CLOSURE(0, 0), POP)
 }
 
 func TestFunctionCalls(t *testing.T) {
 	expect(t, "fn() { 24 }();",
 		[]constant{24, function(PUSH(0), RETVAL)},
-		PUSH(1), CALL(0), POP)
+		CLOSURE(1, 0), CALL(0), POP)
 
 	expect(t, "let f = fn() { 24 }; f();",
 		[]constant{24, function(PUSH(0), RETVAL)},
-		PUSH(1), SETG(0), GETG(0), CALL(0), POP)
+		CLOSURE(1, 0), SETG(0), GETG(0), CALL(0), POP)
 
 	expect(t, "let f = fn(a) { }; f(24);",
 		[]constant{function(NULL, RETVAL), 24},
-		PUSH(0), SETG(0), GETG(0), PUSH(1), CALL(1), POP)
+		CLOSURE(0, 0), SETG(0), GETG(0), PUSH(1), CALL(1), POP)
 
 	expect(t, "let f = fn(a, b, c) { }; f(24, 25, 26);",
 		[]constant{function(NULL, RETVAL), 24, 25, 26},
-		PUSH(0), SETG(0), GETG(0), PUSH(1), PUSH(2), PUSH(3), CALL(3), POP)
+		CLOSURE(0, 0), SETG(0), GETG(0), PUSH(1), PUSH(2), PUSH(3), CALL(3), POP)
 
 	expect(t, "let f = fn(a) { a }; f(24);",
 		[]constant{function(GET(0), RETVAL), 24},
-		PUSH(0), SETG(0), GETG(0), PUSH(1), CALL(1), POP)
+		CLOSURE(0, 0), SETG(0), GETG(0), PUSH(1), CALL(1), POP)
 
 	expect(t, "let f = fn(a, b) { a + b }; f(24, 25);",
 		[]constant{function(GET(0), GET(1), ADD, RETVAL), 24, 25},
-		PUSH(0), SETG(0), GETG(0), PUSH(1), PUSH(2), CALL(2), POP)
+		CLOSURE(0, 0), SETG(0), GETG(0), PUSH(1), PUSH(2), CALL(2), POP)
 }
 
 func TestLetStatementScopes(t *testing.T) {
 	expect(t, "let num = 55; fn() { num }",
 		[]constant{55, function(GETG(0), RETVAL)},
-		PUSH(0), SETG(0), PUSH(1), POP)
+		PUSH(0), SETG(0), CLOSURE(1, 0), POP)
 
 	expect(t, "fn() { let num = 55; num }",
 		[]constant{55, function(PUSH(0), SET(0), GET(0), RETVAL)},
-		PUSH(1), POP)
+		CLOSURE(1, 0), POP)
 
 	expect(t, "fn() { let a = 55; let b = 77; a + b }",
 		[]constant{55, 77, function(PUSH(0), SET(0), PUSH(1), SET(1), GET(0), GET(1), ADD, RETVAL)},
-		PUSH(2), POP)
+		CLOSURE(2, 0), POP)
 }
 
 func TestBuiltins(t *testing.T) {
@@ -209,7 +209,7 @@ func TestBuiltins(t *testing.T) {
 
 	expect(t, "fn() { len([]); }",
 		[]constant{function(BUILTIN(2), ARRAY(0), CALL(1), RETVAL)},
-		PUSH(0), POP)
+		CLOSURE(0, 0), POP)
 }
 
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
@@ -340,4 +340,8 @@ var RETVAL = code.Make(code.OpReturnValue)
 
 func BUILTIN(index int) code.Instructions {
 	return code.Make(code.OpGetBuiltin, index)
+}
+
+func CLOSURE(index, nfree int) code.Instructions {
+	return code.Make(code.OpClosure, index, nfree)
 }

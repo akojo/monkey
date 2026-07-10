@@ -26,6 +26,7 @@ const (
 	SLICE             = "SLICE"
 	STRING            = "STRING"
 	COMPILED_FUNCTION = "COMPILED_FUNCTION"
+	CLOSURE           = "CLOSURE"
 )
 
 type Object interface {
@@ -174,4 +175,14 @@ type CompiledFunction struct {
 func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION }
 func (cf *CompiledFunction) Inspect() string {
 	return fmt.Sprintf("CompiledFunction[%p]", cf)
+}
+
+type Closure struct {
+	Fn   *CompiledFunction
+	Free []Object
+}
+
+func (c *Closure) Type() ObjectType { return CLOSURE }
+func (c *Closure) Inspect() string {
+	return fmt.Sprintf("Closure[%p]", c)
 }

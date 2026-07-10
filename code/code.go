@@ -48,6 +48,8 @@ const (
 	OpReturnValue
 
 	OpGetBuiltin
+
+	OpClosure
 )
 
 type Definition struct {
@@ -93,6 +95,8 @@ var definitions = map[Opcode]*Definition{
 	OpReturnValue: {"RETVAL", []int{}},
 
 	OpGetBuiltin: {"BUILTIN", []int{1}},
+
+	OpClosure: {"CLOSURE", []int{2, 1}},
 }
 
 func Lookup(op byte) (*Definition, error) {
@@ -153,6 +157,8 @@ func (ins Instructions) fmt() (string, int) {
 		return def.Name, 0
 	case 1:
 		return fmt.Sprintf("%s %04x", def.Name, operands[0]), read
+	case 2:
+		return fmt.Sprintf("%s %04x %04x", def.Name, operands[0], operands[1]), read
 	}
 
 	return fmt.Sprintf("ERROR: %s: unhandled operand count %d", def.Name, operandCount), read
