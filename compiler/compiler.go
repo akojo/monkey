@@ -224,14 +224,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return fmt.Errorf("undefined variable '%s'", node.Value)
 		}
 
-		switch symbol.Scope {
-		case GlobalScope:
-			c.emit(code.OpGetGlobal, symbol.Index)
-		case LocalScope:
-			c.emit(code.OpGetLocal, symbol.Index)
-		case BuiltinScope:
-			c.emit(code.OpGetBuiltin, symbol.Index)
-		}
+		c.loadSymbol(symbol)
 	case *ast.FunctionLiteral:
 		c.enterScope()
 
@@ -252,15 +245,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpReturnValue)
 		}
 
+		freeSymbols := c.symbolTable.FreeSymbols
 		locals := len(c.symbolTable.store)
 		instructions := c.leaveScope()
+
+		for _, s := range freeSymbols {
+			c.loadSymbol(s)
+		}
 
 		compiledFn := &object.CompiledFunction{
 			Instructions: instructions,
 			Locals:       locals,
 			Parameters:   len(node.Parameters),
 		}
-		c.emit(code.OpClosure, c.addConstant(compiledFn), 0)
+		c.emit(code.OpClosure, c.addConstant(compiledFn), len(freeSymbols))
 	case *ast.ReturnStatement:
 		err := c.Compile(node.ReturnValue)
 		if err != nil {
@@ -285,6 +283,19 @@ func (c *Compiler) Compile(node ast.Node) error {
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
 	}
 	return nil
+}
+
+func (c *Compiler) loadSymbol(symbol Symbol) {
+	switch symbol.Scope {
+	case GlobalScope:
+		c.emit(code.OpGetGlobal, symbol.Index)
+	case LocalScope:
+		c.emit(code.OpGetLocal, symbol.Index)
+	case BuiltinScope:
+		c.emit(code.OpGetBuiltin, symbol.Index)
+	case FreeScope:
+		c.emit(code.OpGetFree, symbol.Index)
+	}
 }
 
 func (c *Compiler) compileBlockExpression(stmt *ast.BlockStatement) error {

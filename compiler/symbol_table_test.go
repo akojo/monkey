@@ -172,3 +172,112 @@ func TestResolveBuiltins(t *testing.T) {
 		}
 	}
 }
+
+func TestResolveFree(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+	global.Define("b")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+	firstLocal.Define("d")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	tests := []struct {
+		table               *SymbolTable
+		expectedSymbols     []Symbol
+		expectedFreeSymbols []Symbol
+	}{
+		{
+			firstLocal,
+			[]Symbol{
+				{Name: "a", Scope: GlobalScope, Index: 0},
+				{Name: "b", Scope: GlobalScope, Index: 1},
+				{Name: "c", Scope: LocalScope, Index: 0},
+				{Name: "d", Scope: LocalScope, Index: 1},
+			},
+			[]Symbol{},
+		},
+		{
+			secondLocal,
+			[]Symbol{
+				{Name: "a", Scope: GlobalScope, Index: 0},
+				{Name: "b", Scope: GlobalScope, Index: 1},
+				{Name: "c", Scope: FreeScope, Index: 0},
+				{Name: "d", Scope: FreeScope, Index: 1},
+				{Name: "e", Scope: LocalScope, Index: 0},
+				{Name: "f", Scope: LocalScope, Index: 1},
+			},
+			[]Symbol{
+				{Name: "c", Scope: LocalScope, Index: 0},
+				{Name: "d", Scope: LocalScope, Index: 1},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		for _, symbol := range test.expectedSymbols {
+			result, ok := test.table.Resolve(symbol.Name)
+			if !ok {
+				t.Errorf("%s: not found", symbol.Name)
+				continue
+			}
+			if result != symbol {
+				t.Errorf("symbol %s: want %+v, got %+v", symbol.Name, symbol, result)
+			}
+		}
+
+		if len(test.table.FreeSymbols) != len(test.expectedFreeSymbols) {
+			t.Errorf("free symbols: want %d, got %d", len(test.expectedFreeSymbols), len(test.table.FreeSymbols))
+			continue
+		}
+
+		for i, symbol := range test.expectedFreeSymbols {
+			result := test.table.FreeSymbols[i]
+			if result != symbol {
+				t.Errorf("free symbol %s: want %+v, got %+v", symbol.Name, symbol, result)
+			}
+		}
+	}
+}
+
+func TestUnresolved(t *testing.T) {
+	global := NewSymbolTable()
+	global.Define("a")
+
+	firstLocal := NewEnclosedSymbolTable(global)
+	firstLocal.Define("c")
+
+	secondLocal := NewEnclosedSymbolTable(firstLocal)
+	secondLocal.Define("e")
+	secondLocal.Define("f")
+
+	expected := []Symbol{
+		{Name: "a", Scope: GlobalScope, Index: 0},
+		{Name: "c", Scope: FreeScope, Index: 0},
+		{Name: "e", Scope: LocalScope, Index: 0},
+		{Name: "f", Scope: LocalScope, Index: 1},
+	}
+
+	for _, symbol := range expected {
+		result, ok := secondLocal.Resolve(symbol.Name)
+		if !ok {
+			t.Errorf("%s: not found", symbol.Name)
+			continue
+		}
+		if result != symbol {
+			t.Errorf("symbol %s: want %+v, got %+v", symbol.Name, symbol, result)
+		}
+	}
+
+	for _, name := range []string{"b", "d"} {
+		_, ok := secondLocal.Resolve(name)
+		if ok {
+			t.Errorf("%s: should not resolve", name)
+		}
+	}
+
+}

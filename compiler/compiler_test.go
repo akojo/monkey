@@ -212,6 +212,57 @@ func TestBuiltins(t *testing.T) {
 		CLOSURE(0, 0), POP)
 }
 
+func TestClosures(t *testing.T) {
+	expect(t, `
+		fn(a) {
+			fn(b) { a + b }
+		}`,
+		[]constant{
+			function(GETF(0), GET(0), ADD, RETVAL),
+			function(GET(0), CLOSURE(0, 1), RETVAL),
+		},
+		CLOSURE(1, 0), POP)
+
+	expect(t, `
+		fn(a) {
+			fn(b) {
+				fn(c) { a + b + c }
+			}
+		}`,
+		[]constant{
+			function(GETF(0), GETF(1), ADD, GET(0), ADD, RETVAL),
+			function(GETF(0), GET(0), CLOSURE(0, 2), RETVAL),
+			function(GET(0), CLOSURE(1, 1), RETVAL),
+		},
+		CLOSURE(2, 0), POP)
+
+	expect(t, `
+		let global = 55;
+
+		fn() {
+			let a = 66;
+
+			fn() {
+				let b = 77;
+
+				fn() {
+					let c = 88
+					global + a + b + c;
+				}
+			}
+		}`,
+		[]constant{
+			55,
+			66,
+			77,
+			88,
+			function(PUSH(3), SET(0), GETG(0), GETF(0), ADD, GETF(1), ADD, GET(0), ADD, RETVAL),
+			function(PUSH(2), SET(0), GETF(0), GET(0), CLOSURE(4, 2), RETVAL),
+			function(PUSH(1), SET(0), GET(0), CLOSURE(5, 1), RETVAL),
+		},
+		PUSH(0), SETG(0), CLOSURE(6, 0), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -344,4 +395,8 @@ func BUILTIN(index int) code.Instructions {
 
 func CLOSURE(index, nfree int) code.Instructions {
 	return code.Make(code.OpClosure, index, nfree)
+}
+
+func GETF(index int) code.Instructions {
+	return code.Make(code.OpGetFree, index)
 }
