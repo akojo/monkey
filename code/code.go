@@ -62,10 +62,10 @@ var definitions = map[Opcode]*Definition{
 	OpConstant: {"PUSH", []int{2}}, // push a constant
 	OpPop:      {"POP", []int{}},
 
-	OpGetGlobal: {"GETG", []int{2}},
-	OpSetGlobal: {"SETG", []int{2}},
-	OpGetLocal:  {"GET", []int{1}},
-	OpSetLocal:  {"SET", []int{1}},
+	OpGetGlobal: {"GETGLOBAL", []int{2}},
+	OpSetGlobal: {"SETGLOBAL", []int{2}},
+	OpGetLocal:  {"GETLOCAL", []int{1}},
+	OpSetLocal:  {"SETLOCAL", []int{1}},
 
 	OpNull: {"NULL", []int{}},
 
@@ -98,7 +98,7 @@ var definitions = map[Opcode]*Definition{
 	OpGetBuiltin: {"BUILTIN", []int{1}},
 
 	OpClosure: {"CLOSURE", []int{2, 1}},
-	OpGetFree: {"GETF", []int{1}},
+	OpGetFree: {"GETFREE", []int{1}},
 }
 
 func Lookup(op byte) (*Definition, error) {

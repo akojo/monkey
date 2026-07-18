@@ -211,6 +211,51 @@ func TestBuiltinFunctions(t *testing.T) {
 	expect(t, "equals([1,2], [1,2])", true)
 }
 
+func TestClosures(t *testing.T) {
+	expect(t, `
+		let closure = fn(a) {
+			fn() { a; };
+		};
+		let f = closure(99);
+		f();
+	`, 99)
+
+	expect(t, `
+		let adder = fn(a, b) {
+			fn(c) { a + b + c }
+		}
+		adder(1, 2)(8)
+	`, 11)
+
+	expect(t, `
+		let adder = fn(a, b) {
+			let c = a + b
+			fn(d) { c + d }
+		}
+		adder(1, 2)(8)
+	`, 11)
+
+	expect(t, `
+		let doubleAdder = fn(a, b) {
+			let c = a + b
+			fn(d) {
+				let e = d + c
+				fn (f) { e + f }
+			}
+		}
+		doubleAdder(1, 2)(3)(8)
+	`, 14)
+
+	expect(t, `
+		let closure = fn(a, b) {
+			let one = fn() { a }
+			let two = fn() { b }
+			fn() { one() + two() }
+		}
+		closure(9, 90)()
+	`, 99)
+}
+
 func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 
