@@ -201,6 +201,7 @@ type FunctionLiteral struct {
 	Token      token.Token
 	Parameters []*Identifier
 	Body       *BlockStatement
+	Name       string
 }
 
 func (fl *FunctionLiteral) expressionNode()      {}
@@ -211,7 +212,7 @@ func (fl *FunctionLiteral) PrettyPrint(level int) string {
 	for _, p := range fl.Parameters {
 		params = append(params, p.String())
 	}
-	return fmt.Sprintf("%s%s (%s) %s", indent(level), fl.TokenLiteral(), strings.Join(params, ", "), fl.Body.PrettyPrint(level))
+	return fmt.Sprintf("%s%s <%s>(%s) %s", indent(level), fl.TokenLiteral(), fl.Name, strings.Join(params, ", "), fl.Body.PrettyPrint(level))
 }
 
 type CallExpression struct {

@@ -43,7 +43,7 @@ func TestInstructionsString(t *testing.T) {
 	expected := `0000 PUSH 0001
 0003 PUSH 0002
 0006 ADD
-0007 GET 0001
+0007 GETLOCAL 0001
 0009 CLOSURE fffe 00fd
 `
 

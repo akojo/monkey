@@ -161,6 +161,10 @@ func (p *Parser) parseLetStatement() (*ast.LetStatement, error) {
 		return nil, fmt.Errorf("let: %w", err)
 	}
 
+	if fl, ok := stmt.Value.(*ast.FunctionLiteral); ok {
+		fl.Name = stmt.Name.Value
+	}
+
 	if p.peekToken.Type == token.SEMICOLON {
 		p.nextToken()
 	}

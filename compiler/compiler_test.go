@@ -263,6 +263,34 @@ func TestClosures(t *testing.T) {
 		PUSH(0), SETG(0), CLOSURE(6, 0), POP)
 }
 
+func TestRecursiveFunctions(t *testing.T) {
+	expect(t, `
+		let countDown = fn(x) { countDown(x - 1) }
+		countDown(1)
+		`,
+		[]constant{
+			1,
+			function(CURRENTCLOSURE, GET(0), PUSH(0), SUB, CALL(1), RETVAL),
+			1,
+		},
+		CLOSURE(1, 0), SETG(0), GETG(0), PUSH(2), CALL(1), POP)
+
+	expect(t, `
+		let wrapper = fn() {
+			let countDown = fn(x) { countDown(x - 1) }
+			countDown(2)
+		}
+		wrapper()
+		`,
+		[]constant{
+			1,
+			function(CURRENTCLOSURE, GET(0), PUSH(0), SUB, CALL(1), RETVAL),
+			2,
+			function(CLOSURE(1, 0), SET(0), GET(0), PUSH(2), CALL(1), RETVAL),
+		},
+		CLOSURE(3, 0), SETG(0), GETG(0), CALL(0), POP)
+}
+
 func expect(t *testing.T, input string, constants []constant, instructions ...code.Instructions) {
 	t.Helper()
 
@@ -400,3 +428,5 @@ func CLOSURE(index, nfree int) code.Instructions {
 func GETF(index int) code.Instructions {
 	return code.Make(code.OpGetFree, index)
 }
+
+var CURRENTCLOSURE = code.Make(code.OpCurrentClosure)

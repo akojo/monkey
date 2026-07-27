@@ -280,6 +280,29 @@ func TestFunctionLiteral(t *testing.T) {
 	expectInfixExpression(t, bodyStmt.Expression, "x", "+", "y")
 }
 
+func TestFunctionLiteralWithName(t *testing.T) {
+	program := makeProgram(t, "let myFunction = fn() {}")
+
+	expectStatementCount(t, program.Statements, 1)
+
+	stmt := program.Statements[0]
+
+	letStmt, ok := stmt.(*ast.LetStatement)
+	if !ok {
+		t.Errorf("stmt: expected *ast.LetStatement, got %T", stmt)
+		return
+	}
+
+	function, ok := letStmt.Value.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("letStmt.Valiue: expected *ast.FunctionLiteral, got %T", letStmt.Value)
+	}
+
+	if function.Name != "myFunction" {
+		t.Fatalf("function.Name: expected 'myFunction', got '%s'", function.Name)
+	}
+}
+
 func TestCallExpression(t *testing.T) {
 	program := makeProgram(t, "add(1, 2 * 3);")
 

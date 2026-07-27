@@ -256,6 +256,33 @@ func TestClosures(t *testing.T) {
 	`, 99)
 }
 
+func TestRecursiveFunctions(t *testing.T) {
+	expect(t, `
+		let countDown = fn(x) {
+			if (x == 0) {
+				return 0
+			} else {
+				countDown(x - 1)
+			}
+		}
+		countDown(10)
+	`, 0)
+
+	expect(t, `
+		let f = fn() {
+			let countDown = fn(x) {
+				if (x == 0) {
+					return 0
+				} else {
+					countDown(x - 1)
+				}
+			}
+			countDown(10)
+		}
+		f()
+	`, 0)
+}
+
 func expect(t *testing.T, input string, expected any) {
 	t.Helper()
 

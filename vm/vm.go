@@ -213,6 +213,9 @@ func (vm *VM) Run() error {
 
 			closure := vm.frame().cl
 			vm.push(closure.Free[index])
+		case code.OpCurrentClosure:
+			currentClosure := vm.frame().cl
+			vm.push(currentClosure)
 		default:
 			return fmt.Errorf("unknown op: %s", fmtOp(op))
 		}
@@ -228,7 +231,7 @@ func (vm *VM) executeCall(nargs int) error {
 	case *object.Builtin:
 		return vm.callBuiltin(fn, nargs)
 	default:
-		return fmt.Errorf("not callable: %s", fn.Type())
+		return fmt.Errorf("not callable: %+v", fn)
 	}
 }
 
