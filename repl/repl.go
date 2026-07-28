@@ -10,7 +10,6 @@ import (
 
 	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/compiler"
-	"github.com/akojo/monkey/evaluator"
 	"github.com/akojo/monkey/lexer"
 	"github.com/akojo/monkey/object"
 	"github.com/akojo/monkey/parser"
@@ -19,11 +18,10 @@ import (
 
 const PROMPT = ">> "
 
-func Start(in io.Reader, useEvaluator bool) {
+func Start(in io.Reader) {
 	fmt.Print("monkey 1.7\n")
 
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
 
 	constants := []object.Object{}
 	globals := []object.Object{}
@@ -38,6 +36,9 @@ func Start(in io.Reader, useEvaluator bool) {
 		if !scanned {
 			return
 		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "scanner error: %s\n", err)
+		}
 
 		line := scanner.Text()
 
@@ -45,14 +46,6 @@ func Start(in io.Reader, useEvaluator bool) {
 		program := p.ParseProgram()
 		if len(p.Errors()) != 0 {
 			printParseErrors(os.Stderr, p.Errors())
-			continue
-		}
-
-		if useEvaluator {
-			err := evaluator.Eval(program, env)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-			}
 			continue
 		}
 
@@ -85,16 +78,12 @@ func Start(in io.Reader, useEvaluator bool) {
 	}
 }
 
-func Run(in io.Reader, filename string, useEvaluator bool) object.Object {
+func Run(in io.Reader, filename string) object.Object {
 	p := parser.New(lexer.New(in, filename))
 	program := p.ParseProgram()
 	if len(p.Errors()) != 0 {
 		printParseErrors(os.Stderr, p.Errors())
 		return nil
-	}
-
-	if useEvaluator {
-		return evaluator.Eval(program, object.NewEnvironment())
 	}
 
 	c := compiler.New()
