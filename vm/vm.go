@@ -197,7 +197,7 @@ func (vm *VM) Run() error {
 				return fmt.Errorf("unknown operator: -%s", vm.stack[vm.sp-1].Type())
 			}
 			top := vm.stack[vm.sp-1].(*object.Integer)
-			top.Value = -top.Value
+			vm.stack[vm.sp-1] = &object.Integer{Value: -top.Value}
 		case code.OpBang:
 			top := vm.stack[vm.sp-1]
 			vm.stack[vm.sp-1] = lib.Boolean(top == lib.FALSE || top == lib.NULL)

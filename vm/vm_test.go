@@ -30,6 +30,15 @@ func TestIntegerArithmetic(t *testing.T) {
 	expect(t, "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50)
 }
 
+// Regression: prefix minus might mutate objects in the constant pool
+func TestMinusDoesNotChangeConstants(t *testing.T) {
+	expect(t, `
+		let a = 1_000_000;
+		let b = -a;
+		a;
+	`, 1_000_000)
+}
+
 func TestBooleanExpressions(t *testing.T) {
 	expect(t, "true", true)
 	expect(t, "false", false)
