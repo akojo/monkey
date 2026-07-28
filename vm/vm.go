@@ -74,6 +74,11 @@ func (vm *VM) Run() error {
 			vm.frame().ip += 2
 
 			vm.push(vm.constants[idx])
+		case code.OpPushImmediate:
+			value := code.ReadUint16(ins[ip+1:])
+			vm.frame().ip += 2
+
+			vm.push(&object.Integer{Value: int64(value)})
 		case code.OpPop:
 			vm.sp--
 		case code.OpGetGlobal:

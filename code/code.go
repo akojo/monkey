@@ -12,6 +12,7 @@ type Opcode byte
 
 const (
 	OpConstant Opcode = iota
+	OpPushImmediate
 	OpPop
 
 	OpGetGlobal
@@ -62,7 +63,12 @@ type Definition struct {
 
 var definitions = map[Opcode]*Definition{
 	OpConstant: {"PUSH", []int{2}}, // push a constant
-	OpPop:      {"POP", []int{}},
+	// Optimization: push an immediate integer that fits in a half-word.
+	// Since OpConstant above uses a 2-byte operand it takes the same space in
+	// bytecode to encode small integer constants straight into the code itself
+	// (and it saves a slot in the constants store).
+	OpPushImmediate: {"PUSHI", []int{2}},
+	OpPop:           {"POP", []int{}},
 
 	OpGetGlobal: {"GETGLOBAL", []int{2}},
 	OpSetGlobal: {"SETGLOBAL", []int{2}},
