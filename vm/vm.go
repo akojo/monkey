@@ -171,12 +171,12 @@ func (vm *VM) Run() error {
 				End:   endValue,
 			}
 		case code.OpBranch:
-			pos := int(code.ReadUint16(ins[ip+1:]))
-			vm.frame().ip = pos - 1
+			offset := int(code.ReadUint16(ins[ip+1:]))
+			vm.frame().ip += offset
 		case code.OpBranchNotEqual:
 			if !lib.IsTruthy(vm.pop()) {
-				pos := int(code.ReadUint16(ins[ip+1:]))
-				vm.frame().ip = pos - 1
+				offset := int(code.ReadUint16(ins[ip+1:]))
+				vm.frame().ip += offset
 			} else {
 				vm.frame().ip += 2
 			}

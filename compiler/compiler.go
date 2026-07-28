@@ -225,7 +225,12 @@ func (c *Compiler) Compile(node ast.Node) error {
 
 		jumpToEnd := c.emit(code.OpBranch, INVALID_OFFSET)
 
-		c.replaceOperands(jumpToElse, len(c.instructions()))
+		// XXX: Since the VM counts offsets from start of the offset byte
+		// instead of the start of the instruction (the instruction counter
+		// has already been incremented when we're decoding the offset),
+		// we pre-decrement one here. This avoids extra offset arithmetic
+		// during runtime.
+		c.replaceOperands(jumpToElse, len(c.instructions())-jumpToElse-1)
 
 		if node.Alternative == nil {
 			c.emit(code.OpNull)
@@ -236,7 +241,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			}
 		}
 
-		c.replaceOperands(jumpToEnd, len(c.instructions()))
+		// See above for the reason of the extra -1
+		c.replaceOperands(jumpToEnd, len(c.instructions())-jumpToEnd-1)
 	case *ast.Identifier:
 		symbol, ok := c.symbolTable.Resolve(node.Value)
 		if !ok {

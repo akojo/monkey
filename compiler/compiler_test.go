@@ -104,20 +104,20 @@ func TestBooleanExpressions(t *testing.T) {
 
 func TestConditionals(t *testing.T) {
 	expect(t, "if (true) { 10 }; 3333;", []constant{},
-		TRUE, BNE(10), PUSHI(10), B(11), NULL, POP, PUSHI(3333), POP)
-	//  0000  0001     0004     0007   0010  0011 0012     0015
+		TRUE, BNE(8), PUSHI(10), B(3), NULL, POP, PUSHI(3333), POP)
+	//  0000  0001    0004       0007  0010  0011 0012         0015
 
 	expect(t, "if (true) { 10 } else { 20 }; 3333;", []constant{},
-		TRUE, BNE(10), PUSHI(10), B(13), PUSHI(20), POP, PUSHI(3333), POP)
-	//  0000  0001     0004     0007   0010     0013 0014     0017
+		TRUE, BNE(8), PUSHI(10), B(5), PUSHI(20), POP, PUSHI(3333), POP)
+	//  0000  0001     0004      0007  0010       0013 0014         0017
 
 	expect(t, "if (true) { } else { }; 3333;", []constant{},
-		TRUE, BNE(8), NULL, B(9), NULL, POP, PUSHI(3333), POP)
-	//  0000  0001    0004  0005  0008  0009 0010     0013
+		TRUE, BNE(6), NULL, B(3), NULL, POP, PUSHI(3333), POP)
+	//  0000  0001    0004  0005  0008  0009 0010         0013
 
 	expect(t, "if (true) { }; 3333;", []constant{},
-		TRUE, BNE(8), NULL, B(9), NULL, POP, PUSHI(3333), POP)
-	//  0000  0001    0004  0005  0008  0009 0010     0013
+		TRUE, BNE(6), NULL, B(3), NULL, POP, PUSHI(3333), POP)
+	//  0000  0001    0004  0005  0008  0009 0010         0013
 }
 
 func TestGlobalStatements(t *testing.T) {
