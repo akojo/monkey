@@ -146,6 +146,25 @@ func (vm *VM) Run() error {
 
 			vm.sp--
 			vm.stack[vm.sp-1] = result
+		case code.OpSlice:
+			start, end := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
+
+			if start.Type() != object.INTEGER {
+				return fmt.Errorf("cannot use as slice start: %s", start.Type())
+			}
+
+			var endValue *int64 = nil
+			if end.Type() == object.INTEGER {
+				endValue = &end.(*object.Integer).Value
+			} else if end.Type() != object.NULL {
+				return fmt.Errorf("cannot use as slice end: %s", end.Type())
+			}
+
+			vm.sp--
+			vm.stack[vm.sp-1] = &object.Slice{
+				Start: start.(*object.Integer).Value,
+				End:   endValue,
+			}
 		case code.OpBranch:
 			pos := int(code.ReadUint16(ins[ip+1:]))
 			vm.frame().ip = pos - 1

@@ -62,48 +62,39 @@ func TestBooleanExpressions(t *testing.T) {
 	expect(t, "1 != 1", false)
 	expect(t, "1 == 2", false)
 	expect(t, "1 != 2", true)
-}
 
-func TestStringExpressions(t *testing.T) {
-	expect(t, `"monkey"`, "monkey")
-	expect(t, `"mon" + "key"`, "monkey")
-	expect(t, `"mon" + "key" + "banana"`, "monkeybanana")
-}
+	expect(t, `"foo" == "foo"`, true)
+	expect(t, `"foo" != "foo"`, false)
+	expect(t, `"foo" == "bar"`, false)
+	expect(t, `"foo" != "bar"`, true)
 
-func TestArrayLiterals(t *testing.T) {
-	expect(t, "[]", []int{})
-	expect(t, "[1, 2, 3]", []int{1, 2, 3})
-	expect(t, "[1 + 2, 3 - 4, 5 * 6]", []int{3, -1, 30})
-}
+	expect(t, "[] == []", true)
+	expect(t, "[1, 2] == [1, 2]", true)
+	expect(t, "[1, 2] != [1, 2]", false)
+	expect(t, "[1, 2] == [2, 3]", false)
+	expect(t, "[1, 2] == [1, 2, 3]", false)
+	expect(t, "[1, [2, 3]] == [1, [2, 3]]", true)
+	expect(t, `["a", "b"] == ["a", "b"]`, true)
+	expect(t, `[true, 1, "2", [3]] == [true, 1, "2", [3]]`, true)
 
-func TestArrayIndexExpressions(t *testing.T) {
-	expect(t, "[1, 2, 3][0]", 1)
-	expect(t, "[1, 2, 3][2]", 3)
-	expect(t, "[1, 2, 3][3]", nil)
-	expect(t, "let i = 0; [1, 2][i + 1]", 2)
-	expect(t, "let a = [1, 2, 3]; a[2]", 3)
-	expect(t, "let a = [1, 2, 3]; a[0] * a[1]", 2)
-}
+	expect(t, "(1 < 2) == true", true)
+	expect(t, "(1 < 2) == false", false)
+	expect(t, "(1 > 2) != true", true)
+	expect(t, "(1 > 2) != false", false)
 
-func TestHashLiterals(t *testing.T) {
-	expect(t, "{}", map[object.HashKey]int64{})
-	expect(t, "{1: 2, 2: 3}", map[object.HashKey]int64{
-		(&object.Integer{Value: 1}).Hash(): 2,
-		(&object.Integer{Value: 2}).Hash(): 3,
-	})
-	expect(t, "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", map[object.HashKey]int64{
-		(&object.Integer{Value: 2}).Hash(): 4,
-		(&object.Integer{Value: 6}).Hash(): 16,
-	})
-}
-
-func TestHashIndexExpressions(t *testing.T) {
-	expect(t, `{"foo": 5}["foo"]`, 5)
-	expect(t, `{"foo": 5}["bar"]`, nil)
-	expect(t, `{}["foo"]`, nil)
-	expect(t, `{5: 10}[5]`, 10)
-	expect(t, `{true: 5}[true]`, 5)
-	expect(t, `{false: 5}[false]`, 5)
+	expect(t, "1 == true", false)
+	expect(t, "1 == false", false)
+	expect(t, `1 == "1"`, false)
+	expect(t, `0 == []`, false)
+	expect(t, `"true" == true`, false)
+	expect(t, `"true" == false`, false)
+	expect(t, `"" == true`, false)
+	expect(t, `"" == false`, false)
+	expect(t, `"" == []`, false)
+	expect(t, "[1] == true", false)
+	expect(t, "[1] == false", false)
+	expect(t, "[] == true", false)
+	expect(t, "[] == false", false)
 }
 
 func TestBangOperator(t *testing.T) {
@@ -128,10 +119,42 @@ func TestIfElseExpression(t *testing.T) {
 	expect(t, "if (true) {}", nil)
 }
 
+func TestReturnStatement(t *testing.T) {
+	expect(t, "let f = fn() { return 10 }; f()", 10)
+	expect(t, "let f = fn() { return 10; 9; }; f()", 10)
+	expect(t, "let f = fn() { return 2 * 5; 9 }; f()", 10)
+	expect(t, "let f = fn() { 9; return 2 * 5; 9 }; f()", 10)
+	expect(t, `
+		let f = fn() {
+			if (true) {
+				if (true) {
+					return 10;
+				}
+				return 1;
+			}
+		};
+		f()`, 10)
+	expect(t, "let f = fn(x) { return x; return x + 10 }; f(10);", 10)
+	expect(t, `
+		let f = fn(x) {
+			let g = fn(y) {
+				return y + 5
+			}
+			return g(x) + 5
+		}
+		f(5)
+	`, 15)
+}
+
 func TestGlobalLetStatements(t *testing.T) {
 	expect(t, "let one = 1; 1", 1)
 	expect(t, "let one = 1; let two = 2; one + two;", 3)
 	expect(t, "let one = 1; let two = one + one; one + two", 3)
+
+	expect(t, "let a = 5; a;", 5)
+	expect(t, "let a = 5 * 5; a", 25)
+	expect(t, "let a = 5; let b = a; b", 5)
+	expect(t, "let a = 5; let b = 5; let c = a + b + 5; c;", 15)
 }
 
 func TestFunctionCall(t *testing.T) {
@@ -172,6 +195,90 @@ func TestFunctionCall(t *testing.T) {
 	expect(t, "fn(a, b) { a + b; }(1)", errors.New("wrong number of arguments: want 2, got 1"))
 }
 
+func TestBuiltinFunctions(t *testing.T) {
+	expect(t, `len("")`, 0)
+	expect(t, `len("mitä")`, 4)
+	expect(t, `len("💩")`, 1)
+	expect(t, `len("hello world")`, 11)
+	expect(t, "len(1)", errors.New("argument to `len` not supported, got INTEGER"))
+	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
+	expect(t, "len([1, 2, 3])", 3)
+	expect(t, "len([])", 0)
+
+	expect(t, "let a = append([1, 2], 3); a == [1, 2, 3]", true)
+	expect(t, "let a = append([], 1); a == [1]", true)
+	expect(t, "let a = append([], [1]); a == [[1]]", true)
+
+	expect(t, "equals(1, 1)", true)
+	expect(t, `equals("foo", "foo")`, true)
+	expect(t, "equals([1,2], [1,2])", true)
+}
+
+func TestStringExpressions(t *testing.T) {
+	expect(t, `"monkey"`, "monkey")
+	expect(t, `"mon" + "key"`, "monkey")
+	expect(t, `"mon" + "key" + "banana"`, "monkeybanana")
+}
+
+func TestArrayLiterals(t *testing.T) {
+	expect(t, "[]", []int{})
+	expect(t, "[1, 2, 3]", []int{1, 2, 3})
+	expect(t, "[1 + 2, 3 - 4, 5 * 6]", []int{3, -1, 30})
+}
+
+func TestArrayIndexExpressions(t *testing.T) {
+	expect(t, "[1, 2, 3][0]", 1)
+	expect(t, "[1, 2, 3][2]", 3)
+	expect(t, "[1, 2, 3][3]", nil)
+	expect(t, "let i = 0; [1, 2][i + 1]", 2)
+	expect(t, "let a = [1, 2, 3]; a[2]", 3)
+	expect(t, "let a = [1, 2, 3]; a[0] * a[1]", 2)
+}
+
+func TestArraySlices(t *testing.T) {
+	expect(t, "let a = [1, 2, 3, 4]; slice(a, 1, 3) == [2, 3]", true)
+
+	expect(t, "let a = [1, 2, 3, 4][1:3]; a == [2, 3]", true)
+	expect(t, "let a = [1, 2, 3, 4][1:]; a == [2, 3, 4]", true)
+	expect(t, "let a = [1, 2, 3, 4][:2]; a == [1, 2]", true)
+
+	expect(t, `
+		let start = 0;
+		let end = 2;
+		[1, 2, 3, 4][start:end] == [1, 2]
+	`, true)
+
+	expect(t, `[]["start":0]`, errors.New("cannot use as slice start: STRING"))
+	expect(t, `[][0:"end"]`, errors.New("cannot use as slice end: STRING"))
+}
+
+func TestArrayConcatenation(t *testing.T) {
+	expect(t, "[1, 2] + [3, 4] == [1, 2, 3, 4]", true)
+	expect(t, "[1, 2] + [] == [1, 2]", true)
+	expect(t, "[] + [] == []", true)
+}
+
+func TestHashLiterals(t *testing.T) {
+	expect(t, "{}", map[object.HashKey]int64{})
+	expect(t, "{1: 2, 2: 3}", map[object.HashKey]int64{
+		(&object.Integer{Value: 1}).Hash(): 2,
+		(&object.Integer{Value: 2}).Hash(): 3,
+	})
+	expect(t, "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", map[object.HashKey]int64{
+		(&object.Integer{Value: 2}).Hash(): 4,
+		(&object.Integer{Value: 6}).Hash(): 16,
+	})
+}
+
+func TestHashIndexExpressions(t *testing.T) {
+	expect(t, `{"foo": 5}["foo"]`, 5)
+	expect(t, `{"foo": 5}["bar"]`, nil)
+	expect(t, `{}["foo"]`, nil)
+	expect(t, `{5: 10}[5]`, 10)
+	expect(t, `{true: 5}[true]`, 5)
+	expect(t, `{false: 5}[false]`, 5)
+}
+
 func TestVariableScoping(t *testing.T) {
 	expect(t, "fn() { let one = 1; one }();", 1)
 	expect(t, "fn() { let one = 1; let two = 2; one + two }();", 3)
@@ -190,25 +297,6 @@ func TestVariableScoping(t *testing.T) {
 		let f = fn() { let one = fn() { return 1 }; one }
 		f()()
 	`, 1)
-}
-
-func TestBuiltinFunctions(t *testing.T) {
-	expect(t, `len("")`, 0)
-	expect(t, `len("mitä")`, 4)
-	expect(t, `len("💩")`, 1)
-	expect(t, `len("hello world")`, 11)
-	expect(t, "len(1)", errors.New("argument to `len` not supported, got INTEGER"))
-	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
-	expect(t, "len([1, 2, 3])", 3)
-	expect(t, "len([])", 0)
-
-	expect(t, "let a = append([1, 2], 3); a == [1, 2, 3]", true)
-	expect(t, "let a = append([], 1); a == [1]", true)
-	expect(t, "let a = append([], [1]); a == [[1]]", true)
-
-	expect(t, "equals(1, 1)", true)
-	expect(t, `equals("foo", "foo")`, true)
-	expect(t, "equals([1,2], [1,2])", true)
 }
 
 func TestClosures(t *testing.T) {

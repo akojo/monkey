@@ -192,6 +192,20 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpIndex)
+	case *ast.SliceExpression:
+		if node.Start == nil {
+			c.emit(code.OpConstant, c.addConstant(&object.Integer{Value: 0}))
+		} else if err := c.Compile(node.Start); err != nil {
+			return err
+		}
+
+		if node.End == nil {
+			c.emit(code.OpNull)
+		} else if err := c.Compile(node.End); err != nil {
+			return err
+		}
+
+		c.emit(code.OpSlice)
 	case *ast.IFExpression:
 		err := c.Compile(node.Condition)
 		if err != nil {

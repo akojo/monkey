@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/akojo/monkey/ast"
+	"github.com/akojo/monkey/builtin"
 	"github.com/akojo/monkey/code"
 	"github.com/akojo/monkey/lexer"
 	"github.com/akojo/monkey/object"
@@ -146,6 +147,17 @@ func TestIndexExpressions(t *testing.T) {
 		PUSH(0), PUSH(1), HASH(1), PUSH(2), INDEX, POP)
 }
 
+func TestSliceExpressions(t *testing.T) {
+	expect(t, "[1, 2][0:2]", []constant{1, 2, 0, 2},
+		PUSH(0), PUSH(1), ARRAY(2), PUSH(2), PUSH(3), SLICE, INDEX, POP)
+
+	expect(t, "[1, 2][0:]", []constant{1, 2, 0},
+		PUSH(0), PUSH(1), ARRAY(2), PUSH(2), NULL, SLICE, INDEX, POP)
+
+	expect(t, "[1, 2][:2]", []constant{1, 2, 0, 2},
+		PUSH(0), PUSH(1), ARRAY(2), PUSH(2), PUSH(3), SLICE, INDEX, POP)
+}
+
 func TestFunctions(t *testing.T) {
 	expect(t, "fn() { return 5 + 10 }",
 		[]constant{5, 10, function(PUSH(0), PUSH(1), ADD, RETVAL)},
@@ -205,10 +217,10 @@ func TestLetStatementScopes(t *testing.T) {
 func TestBuiltins(t *testing.T) {
 	expect(t, "len([]); append([], 1);",
 		[]constant{1},
-		BUILTIN(2), ARRAY(0), CALL(1), POP, BUILTIN(0), ARRAY(0), PUSH(0), CALL(2), POP)
+		BUILTIN("len"), ARRAY(0), CALL(1), POP, BUILTIN("append"), ARRAY(0), PUSH(0), CALL(2), POP)
 
 	expect(t, "fn() { len([]); }",
-		[]constant{function(BUILTIN(2), ARRAY(0), CALL(1), RETVAL)},
+		[]constant{function(BUILTIN("len"), ARRAY(0), CALL(1), RETVAL)},
 		CLOSURE(0, 0), POP)
 }
 
@@ -389,6 +401,7 @@ func HASH(size int) code.Instructions {
 }
 
 var INDEX = code.Make(code.OpIndex)
+var SLICE = code.Make(code.OpSlice)
 
 var EQ = code.Make(code.OpEqual)
 var NEQ = code.Make(code.OpNotEqual)
@@ -417,8 +430,13 @@ func CALL(nargs int) code.Instructions {
 var RET = code.Make(code.OpReturn)
 var RETVAL = code.Make(code.OpReturnValue)
 
-func BUILTIN(index int) code.Instructions {
-	return code.Make(code.OpGetBuiltin, index)
+func BUILTIN(name string) code.Instructions {
+	for i, b := range builtin.Builtins {
+		if b.Name == name {
+			return code.Make(code.OpGetBuiltin, i)
+		}
+	}
+	panic("invalid builtin name: " + name)
 }
 
 func CLOSURE(index, nfree int) code.Instructions {
