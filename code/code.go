@@ -47,7 +47,6 @@ const (
 
 	OpCall
 	OpReturn
-	OpReturnValue
 
 	OpGetBuiltin
 
@@ -100,9 +99,8 @@ var definitions = map[Opcode]*Definition{
 	OpMinus: {"NEG", []int{}},
 	OpBang:  {"NOT", []int{}},
 
-	OpCall:        {"CALL", []int{1}},
-	OpReturn:      {"RET", []int{}},
-	OpReturnValue: {"RETVAL", []int{}},
+	OpCall:   {"CALL", []int{1}},
+	OpReturn: {"RET", []int{}},
 
 	OpGetBuiltin: {"BUILTIN", []int{1}},
 

@@ -270,8 +270,8 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.replaceLastPopWithReturn()
 		}
 
-		if c.currentInstruction().Opcode != code.OpReturnValue {
-			c.emit(code.OpReturnValue)
+		if c.currentInstruction().Opcode != code.OpReturn {
+			c.emit(code.OpReturn)
 		}
 
 		freeSymbols := c.symbolTable.FreeSymbols
@@ -294,7 +294,7 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 
-		c.emit(code.OpReturnValue)
+		c.emit(code.OpReturn)
 	case *ast.CallExpression:
 		err := c.Compile(node.Function)
 		if err != nil {
@@ -411,10 +411,10 @@ func (c *Compiler) replaceOperands(pos int, operand ...int) {
 
 func (c *Compiler) replaceLastPopWithReturn() {
 	pos := c.scopes[c.currentScope].currentInstruction.Position
-	returnValue := code.Make(code.OpReturnValue)
+	returnValue := code.Make(code.OpReturn)
 	copy(c.scopes[c.currentScope].instructions[pos:], returnValue)
 
-	c.scopes[c.currentScope].currentInstruction.Opcode = code.OpReturnValue
+	c.scopes[c.currentScope].currentInstruction.Opcode = code.OpReturn
 }
 
 func (c *Compiler) enterScope() {

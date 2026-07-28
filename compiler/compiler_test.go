@@ -166,57 +166,57 @@ func TestSliceExpressions(t *testing.T) {
 
 func TestFunctions(t *testing.T) {
 	expect(t, "fn() { return 5 + 10 }",
-		[]constant{function(PUSHI(5), PUSHI(10), ADD, RETVAL)},
+		[]constant{function(PUSHI(5), PUSHI(10), ADD, RET)},
 		CLOSURE(0, 0), POP)
 
 	expect(t, "fn() { 5 + 10 }",
-		[]constant{function(PUSHI(5), PUSHI(10), ADD, RETVAL)},
+		[]constant{function(PUSHI(5), PUSHI(10), ADD, RET)},
 		CLOSURE(0, 0), POP)
 
 	expect(t, "fn() { 1; 2 }",
-		[]constant{function(PUSHI(1), POP, PUSHI(2), RETVAL)},
+		[]constant{function(PUSHI(1), POP, PUSHI(2), RET)},
 		CLOSURE(0, 0), POP)
 
-	expect(t, "fn() {}", []constant{function(NULL, RETVAL)}, CLOSURE(0, 0), POP)
+	expect(t, "fn() {}", []constant{function(NULL, RET)}, CLOSURE(0, 0), POP)
 }
 
 func TestFunctionCalls(t *testing.T) {
 	expect(t, "fn() { 24 }();",
-		[]constant{function(PUSHI(24), RETVAL)},
+		[]constant{function(PUSHI(24), RET)},
 		CLOSURE(0, 0), CALL(0), POP)
 
 	expect(t, "let f = fn() { 24 }; f();",
-		[]constant{function(PUSHI(24), RETVAL)},
+		[]constant{function(PUSHI(24), RET)},
 		CLOSURE(0, 0), SETG(0), GETG(0), CALL(0), POP)
 
 	expect(t, "let f = fn(a) { }; f(24);",
-		[]constant{function(NULL, RETVAL)},
+		[]constant{function(NULL, RET)},
 		CLOSURE(0, 0), SETG(0), GETG(0), PUSHI(24), CALL(1), POP)
 
 	expect(t, "let f = fn(a, b, c) { }; f(24, 25, 26);",
-		[]constant{function(NULL, RETVAL)},
+		[]constant{function(NULL, RET)},
 		CLOSURE(0, 0), SETG(0), GETG(0), PUSHI(24), PUSHI(25), PUSHI(26), CALL(3), POP)
 
 	expect(t, "let f = fn(a) { a }; f(24);",
-		[]constant{function(GET(0), RETVAL)},
+		[]constant{function(GET(0), RET)},
 		CLOSURE(0, 0), SETG(0), GETG(0), PUSHI(24), CALL(1), POP)
 
 	expect(t, "let f = fn(a, b) { a + b }; f(24, 25);",
-		[]constant{function(GET(0), GET(1), ADD, RETVAL)},
+		[]constant{function(GET(0), GET(1), ADD, RET)},
 		CLOSURE(0, 0), SETG(0), GETG(0), PUSHI(24), PUSHI(25), CALL(2), POP)
 }
 
 func TestLetStatementScopes(t *testing.T) {
 	expect(t, "let num = 55; fn() { num }",
-		[]constant{function(GETG(0), RETVAL)},
+		[]constant{function(GETG(0), RET)},
 		PUSHI(55), SETG(0), CLOSURE(0, 0), POP)
 
 	expect(t, "fn() { let num = 55; num }",
-		[]constant{function(PUSHI(55), SET(0), GET(0), RETVAL)},
+		[]constant{function(PUSHI(55), SET(0), GET(0), RET)},
 		CLOSURE(0, 0), POP)
 
 	expect(t, "fn() { let a = 55; let b = 77; a + b }",
-		[]constant{function(PUSHI(55), SET(0), PUSHI(77), SET(1), GET(0), GET(1), ADD, RETVAL)},
+		[]constant{function(PUSHI(55), SET(0), PUSHI(77), SET(1), GET(0), GET(1), ADD, RET)},
 		CLOSURE(0, 0), POP)
 }
 
@@ -226,7 +226,7 @@ func TestBuiltins(t *testing.T) {
 		BUILTIN("len"), ARRAY(0), CALL(1), POP, BUILTIN("append"), ARRAY(0), PUSHI(1), CALL(2), POP)
 
 	expect(t, "fn() { len([]); }",
-		[]constant{function(BUILTIN("len"), ARRAY(0), CALL(1), RETVAL)},
+		[]constant{function(BUILTIN("len"), ARRAY(0), CALL(1), RET)},
 		CLOSURE(0, 0), POP)
 }
 
@@ -236,8 +236,8 @@ func TestClosures(t *testing.T) {
 			fn(b) { a + b }
 		}`,
 		[]constant{
-			function(GETF(0), GET(0), ADD, RETVAL),
-			function(GET(0), CLOSURE(0, 1), RETVAL),
+			function(GETF(0), GET(0), ADD, RET),
+			function(GET(0), CLOSURE(0, 1), RET),
 		},
 		CLOSURE(1, 0), POP)
 
@@ -248,9 +248,9 @@ func TestClosures(t *testing.T) {
 			}
 		}`,
 		[]constant{
-			function(GETF(0), GETF(1), ADD, GET(0), ADD, RETVAL),
-			function(GETF(0), GET(0), CLOSURE(0, 2), RETVAL),
-			function(GET(0), CLOSURE(1, 1), RETVAL),
+			function(GETF(0), GETF(1), ADD, GET(0), ADD, RET),
+			function(GETF(0), GET(0), CLOSURE(0, 2), RET),
+			function(GET(0), CLOSURE(1, 1), RET),
 		},
 		CLOSURE(2, 0), POP)
 
@@ -270,9 +270,9 @@ func TestClosures(t *testing.T) {
 			}
 		}`,
 		[]constant{
-			function(PUSHI(88), SET(0), GETG(0), GETF(0), ADD, GETF(1), ADD, GET(0), ADD, RETVAL),
-			function(PUSHI(77), SET(0), GETF(0), GET(0), CLOSURE(0, 2), RETVAL),
-			function(PUSHI(66), SET(0), GET(0), CLOSURE(1, 1), RETVAL),
+			function(PUSHI(88), SET(0), GETG(0), GETF(0), ADD, GETF(1), ADD, GET(0), ADD, RET),
+			function(PUSHI(77), SET(0), GETF(0), GET(0), CLOSURE(0, 2), RET),
+			function(PUSHI(66), SET(0), GET(0), CLOSURE(1, 1), RET),
 		},
 		PUSHI(55), SETG(0), CLOSURE(2, 0), POP)
 }
@@ -283,7 +283,7 @@ func TestRecursiveFunctions(t *testing.T) {
 		countDown(1)
 		`,
 		[]constant{
-			function(CURRENTCLOSURE, GET(0), PUSHI(1), SUB, CALL(1), RETVAL),
+			function(CURRENTCLOSURE, GET(0), PUSHI(1), SUB, CALL(1), RET),
 		},
 		CLOSURE(0, 0), SETG(0), GETG(0), PUSHI(1), CALL(1), POP)
 
@@ -295,8 +295,8 @@ func TestRecursiveFunctions(t *testing.T) {
 		wrapper()
 		`,
 		[]constant{
-			function(CURRENTCLOSURE, GET(0), PUSHI(1), SUB, CALL(1), RETVAL),
-			function(CLOSURE(0, 0), SET(0), GET(0), PUSHI(2), CALL(1), RETVAL),
+			function(CURRENTCLOSURE, GET(0), PUSHI(1), SUB, CALL(1), RET),
+			function(CLOSURE(0, 0), SET(0), GET(0), PUSHI(2), CALL(1), RET),
 		},
 		CLOSURE(1, 0), SETG(0), GETG(0), CALL(0), POP)
 }
@@ -430,7 +430,6 @@ func CALL(nargs int) code.Instructions {
 }
 
 var RET = code.Make(code.OpReturn)
-var RETVAL = code.Make(code.OpReturnValue)
 
 func BUILTIN(name string) code.Instructions {
 	for i, b := range builtin.Builtins {
