@@ -52,7 +52,7 @@ var Builtins = []Builtin{
 				if err := argCheck(2, args); err != nil {
 					return err
 				}
-				return lib.Boolean(lib.Equals(args[0], args[1]))
+				return lib.Boolean((args[0].Equals(args[1])))
 			},
 		},
 	},

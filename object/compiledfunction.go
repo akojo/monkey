@@ -12,7 +12,14 @@ type CompiledFunction struct {
 	Parameters   int
 }
 
-func (cf *CompiledFunction) Type() ObjectType { return COMPILED_FUNCTION }
+func (cf *CompiledFunction) Type() ObjectType {
+	return COMPILED_FUNCTION
+}
+
 func (cf *CompiledFunction) Inspect() string {
 	return fmt.Sprintf("CompiledFunction[%p]", cf)
+}
+
+func (cf *CompiledFunction) Equals(other Object) bool {
+	return cf == other
 }

@@ -21,4 +21,5 @@ const (
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+	Equals(other Object) bool
 }

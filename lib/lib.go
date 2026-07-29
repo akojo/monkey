@@ -12,37 +12,6 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
-func Equals(left, right object.Object) bool {
-	if left.Type() != right.Type() {
-		return false
-	}
-
-	switch left := left.(type) {
-	case *object.Boolean:
-		return left == right
-	case *object.Integer:
-		return left.Value == right.(*object.Integer).Value
-	case *object.String:
-		return left.Value == right.(*object.String).Value
-	case *object.Array:
-		return arrayEquals(left, right.(*object.Array))
-	}
-	return false
-}
-
-func arrayEquals(left, right *object.Array) bool {
-	if len(left.Elements) != len(right.Elements) {
-		return false
-	}
-
-	for i := range left.Elements {
-		if !Equals(left.Elements[i], right.Elements[i]) {
-			return false
-		}
-	}
-	return true
-}
-
 func Add(left, right object.Object) object.Object {
 	if left.Type() != right.Type() {
 		return Error("type mismatch: %s + %s", left.Type(), right.Type())

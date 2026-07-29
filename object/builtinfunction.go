@@ -5,5 +5,14 @@ type Builtin struct {
 	Fn BuiltinFunction
 }
 
-func (b *Builtin) Type() ObjectType { return BUILTIN }
-func (b *Builtin) Inspect() string  { return "<builtin>" }
+func (b *Builtin) Type() ObjectType {
+	return BUILTIN
+}
+
+func (b *Builtin) Inspect() string {
+	return "<builtin>"
+}
+
+func (b *Builtin) Equals(other Object) bool {
+	return b == other
+}

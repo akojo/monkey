@@ -67,6 +67,14 @@ func TestBooleanExpressions(t *testing.T) {
 	expect(t, "1 > 2", false)
 	expect(t, "1 < 1", false)
 	expect(t, "1 > 1", false)
+
+	expect(t, "(1 < 2) == true", true)
+	expect(t, "(1 < 2) == false", false)
+	expect(t, "(1 > 2) != true", true)
+	expect(t, "(1 > 2) != false", false)
+}
+
+func TestEquality(t *testing.T) {
 	expect(t, "1 == 1", true)
 	expect(t, "1 != 1", false)
 	expect(t, "1 == 2", false)
@@ -86,10 +94,18 @@ func TestBooleanExpressions(t *testing.T) {
 	expect(t, `["a", "b"] == ["a", "b"]`, true)
 	expect(t, `[true, 1, "2", [3]] == [true, 1, "2", [3]]`, true)
 
-	expect(t, "(1 < 2) == true", true)
-	expect(t, "(1 < 2) == false", false)
-	expect(t, "(1 > 2) != true", true)
-	expect(t, "(1 > 2) != false", false)
+	expect(t, "{1: 1} == {1: 1}", true)
+	expect(t, "{1: 1} == {1: 2}", false)
+	expect(t, "{1: 1} == {2: 1}", false)
+	expect(t, "{1: 1, 2: 2} == {1: 1}", false)
+	expect(t, "{1: 1} == {1: 1, 2: 2}", false)
+	expect(t, `{1: [1, true, "hello"]} == {1: [1, true, "hello"]}`, true)
+
+	expect(t, `
+		let f1 = fn() {}
+		let f2 = fn() {}
+		f1 == f2
+	`, false)
 
 	expect(t, "1 == true", false)
 	expect(t, "1 == false", false)

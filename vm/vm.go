@@ -308,9 +308,9 @@ func (vm *VM) pop() object.Object {
 func executeBinaryOp(op code.Opcode, left, right object.Object) object.Object {
 	switch {
 	case op == code.OpEqual:
-		return lib.Boolean(lib.Equals(left, right))
+		return lib.Boolean(left.Equals(right))
 	case op == code.OpNotEqual:
-		return lib.Boolean(!lib.Equals(left, right))
+		return lib.Boolean(!left.Equals(right))
 	case op == code.OpAdd:
 		return lib.Add(left, right)
 	case op == code.OpMul:

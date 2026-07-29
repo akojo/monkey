@@ -25,6 +25,7 @@ type Hash struct {
 }
 
 func (h *Hash) Type() ObjectType { return HASH }
+
 func (h *Hash) Inspect() string {
 	var out bytes.Buffer
 
@@ -38,4 +39,31 @@ func (h *Hash) Inspect() string {
 	out.WriteString("}")
 
 	return out.String()
+}
+
+func (h *Hash) Equals(other Object) bool {
+	if h == other {
+		return true
+	}
+
+	switch other := other.(type) {
+	case *Hash:
+		if len(h.Pairs) != len(other.Pairs) {
+			return false
+		}
+
+		for key, pair := range h.Pairs {
+			otherpair, found := other.Pairs[key]
+			if !found {
+				return false
+			}
+			if !pair.Value.Equals(otherpair.Value) {
+				return false
+			}
+		}
+
+		return true
+	default:
+		return false
+	}
 }
