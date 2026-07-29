@@ -139,8 +139,7 @@ func (vm *VM) Run() error {
 			}
 			vm.sp -= npairs * 2
 
-			vm.stack[vm.sp] = &object.Hash{Pairs: pairs}
-			vm.sp++
+			vm.push(&object.Hash{Pairs: pairs})
 		case code.OpIndex:
 			obj, index := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
