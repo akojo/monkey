@@ -2,6 +2,8 @@ package lib
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/akojo/monkey/object"
 )
@@ -27,12 +29,12 @@ func Add(left, right object.Object) object.Object {
 	case *object.String:
 		return &object.String{Value: left.Value + right.(*object.String).Value}
 	case *object.Array:
-		l := left.Elements
-		r := right.(*object.Array).Elements
-
-		result := Realloc(l, len(l)+len(r))
-		copy(result[len(l):], r)
+		result := slices.Concat(left.Elements, right.(*object.Array).Elements)
 		return &object.Array{Elements: result}
+	case *object.Hash:
+		pairs := maps.Clone(left.Pairs)
+		maps.Copy(pairs, right.(*object.Hash).Pairs)
+		return &object.Hash{Pairs: pairs}
 	}
 	return Error("invalid types: %s + %s", left.Type(), right.Type())
 }

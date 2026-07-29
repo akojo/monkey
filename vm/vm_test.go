@@ -94,6 +94,7 @@ func TestEquality(t *testing.T) {
 	expect(t, `["a", "b"] == ["a", "b"]`, true)
 	expect(t, `[true, 1, "2", [3]] == [true, 1, "2", [3]]`, true)
 
+	expect(t, "{} == {}", true)
 	expect(t, "{1: 1} == {1: 1}", true)
 	expect(t, "{1: 1} == {1: 2}", false)
 	expect(t, "{1: 1} == {2: 1}", false)
@@ -302,6 +303,12 @@ func TestHashIndexExpressions(t *testing.T) {
 	expect(t, `{5: 10}[5]`, 10)
 	expect(t, `{true: 5}[true]`, 5)
 	expect(t, `{false: 5}[false]`, 5)
+}
+
+func TestHashConcatenation(t *testing.T) {
+	expect(t, "{1: 1} + {2: 2} == {1: 1, 2: 2}", true)
+	expect(t, "{1: 1, 2: 2} + {2: 4} == {1: 1, 2: 4}", true)
+	expect(t, "{} + {} == {}", true)
 }
 
 func TestVariableScoping(t *testing.T) {
