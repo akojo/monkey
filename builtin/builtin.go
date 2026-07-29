@@ -3,7 +3,6 @@ package builtin
 import (
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/akojo/monkey/lib"
 	"github.com/akojo/monkey/object"
@@ -69,9 +68,8 @@ var Builtins = []Builtin{
 					return &object.Integer{Value: int64(len(arg.Elements))}
 				case *object.Hash:
 					return &object.Integer{Value: int64(len(arg.Pairs))}
-				case *object.String:
-					length := utf8.RuneCountInString(arg.Value)
-					return &object.Integer{Value: int64(length)}
+				case object.String:
+					return arg.Len()
 				}
 				return lib.Error("argument to `len` not supported, got %s", args[0].Type())
 			},

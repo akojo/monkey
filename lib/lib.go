@@ -26,8 +26,8 @@ func Add(left, right object.Object) object.Object {
 		return FALSE
 	case *object.Integer:
 		return &object.Integer{Value: left.Value + right.(*object.Integer).Value}
-	case *object.String:
-		return &object.String{Value: left.Value + right.(*object.String).Value}
+	case object.String:
+		return left.Add(right.(object.String))
 	case *object.Array:
 		result := slices.Concat(left.Elements, right.(*object.Array).Elements)
 		return &object.Array{Elements: result}

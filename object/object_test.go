@@ -21,10 +21,10 @@ func TestIntegerHashKey(t *testing.T) {
 }
 
 func TestStringHashKey(t *testing.T) {
-	hello1 := &String{Value: "hello world"}
-	hello2 := &String{Value: "hello world"}
-	diff1 := &String{Value: "My name is johnny"}
-	diff2 := &String{Value: "My name is johnny"}
+	hello1 := NewString("hello world")
+	hello2 := NewString("hello world")
+	diff1 := NewString("My name is johnny")
+	diff2 := NewString("My name is johnny")
 
 	expectHashEquals(t, hello1, hello2)
 	expectHashEquals(t, diff1, diff2)

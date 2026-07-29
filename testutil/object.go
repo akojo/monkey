@@ -56,12 +56,12 @@ func expectBoolean(actual object.Object, expected bool) error {
 }
 
 func expectString(actual object.Object, expected string) error {
-	str, ok := actual.(*object.String)
+	str, ok := actual.(object.String)
 	if !ok {
 		return fmt.Errorf("expected String, got %q", actual.Type())
 	}
-	if str.Value != expected {
-		return fmt.Errorf("string: expected %q, got %q", expected, str.Value)
+	if !str.Equals(object.NewString(expected)) {
+		return fmt.Errorf("string: expected %q, got %q", expected, str.Inspect())
 	}
 	return nil
 }
