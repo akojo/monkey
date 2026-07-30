@@ -9,7 +9,7 @@ const (
 	ERROR             = "ERROR"
 	FUNCTION          = "FUNCTION"
 	HASH              = "HASH"
-	INTEGER           = "INTEGER"
+	NUMBER            = "NUMBER"
 	NULL              = "NULL"
 	RETURN            = "RETURN"
 	SLICE             = "SLICE"

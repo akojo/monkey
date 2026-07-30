@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"maps"
+	"math"
 	"slices"
 
 	"github.com/akojo/monkey/object"
@@ -24,8 +25,8 @@ func Add(left, right object.Object) object.Object {
 			return TRUE
 		}
 		return FALSE
-	case *object.Integer:
-		return &object.Integer{Value: left.Value + right.(*object.Integer).Value}
+	case *object.Number:
+		return &object.Number{Value: left.Value + right.(*object.Number).Value}
 	case object.String:
 		return left.Add(right.(object.String))
 	case *object.Array:
@@ -49,18 +50,24 @@ func Multiply(left, right object.Object) object.Object {
 			return FALSE
 		}
 		return TRUE
-	case *object.Integer:
-		return &object.Integer{Value: left.Value * right.(*object.Integer).Value}
+	case *object.Number:
+		return &object.Number{Value: left.Value * right.(*object.Number).Value}
 	}
 	return Error("invalid types: %s * %s", left.Type(), right.Type())
 }
 
 func Index(obj object.Object, index object.Object) object.Object {
 	switch {
-	case obj.Type() == object.ARRAY && index.Type() == object.INTEGER:
+	case obj.Type() == object.ARRAY && index.Type() == object.NUMBER:
 		array := obj.(*object.Array)
-		i := index.(*object.Integer).Value
-		if i < 0 || i > int64(len(array.Elements)-1) {
+
+		f := index.(*object.Number).Value
+		if math.Round(f) != f {
+			return Error("invalid index")
+		}
+
+		i := int(f)
+		if i < 0 || i > (len(array.Elements)-1) {
 			return NULL
 		}
 		return array.Elements[i]
@@ -68,6 +75,8 @@ func Index(obj object.Object, index object.Object) object.Object {
 		array := obj.(*object.Array)
 		slice := index.(*object.Slice)
 		return sliceIndex(array, slice)
+	case obj.Type() == object.ARRAY:
+		return Error("invalid index type: %s", index.Type())
 	case obj.Type() == object.HASH:
 		return hashIndex(obj, index)
 	}
@@ -75,9 +84,9 @@ func Index(obj object.Object, index object.Object) object.Object {
 }
 
 func sliceIndex(array *object.Array, sliceObj *object.Slice) object.Object {
-	var end int64
+	var end int
 	if sliceObj.End == nil {
-		end = int64(len(array.Elements))
+		end = len(array.Elements)
 	} else {
 		end = *sliceObj.End
 	}
@@ -101,18 +110,18 @@ func hashIndex(hash, index object.Object) object.Object {
 	return pair.Value
 }
 
-func SliceArray(array *object.Array, start int64, end int64) object.Object {
+func SliceArray(array *object.Array, start int, end int) object.Object {
 	if start < 0 {
 		start = 0
 	}
-	if start > int64(len(array.Elements)) {
-		start = int64(len(array.Elements))
+	if start > len(array.Elements) {
+		start = len(array.Elements)
 	}
 	if end < 0 {
 		end = 0
 	}
-	if end > int64(len(array.Elements)) {
-		end = int64(len(array.Elements))
+	if end > len(array.Elements) {
+		end = len(array.Elements)
 	}
 	if !(start < end) {
 		return &object.Array{Elements: make([]object.Object, 0)}

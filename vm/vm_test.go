@@ -80,6 +80,10 @@ func TestEquality(t *testing.T) {
 	expect(t, "1 == 2", false)
 	expect(t, "1 != 2", true)
 
+	expect(t, "1 == 1.0", true)
+	expect(t, "10 / 2 == 5", true)
+	expect(t, "1 / 10 == 0.1", true)
+
 	expect(t, `"foo" == "foo"`, true)
 	expect(t, `"foo" != "foo"`, false)
 	expect(t, `"foo" == "bar"`, false)
@@ -226,7 +230,7 @@ func TestBuiltinFunctions(t *testing.T) {
 	expect(t, `len("mitä")`, 4)
 	expect(t, `len("💩")`, 1)
 	expect(t, `len("hello world")`, 11)
-	expect(t, "len(1)", errors.New("argument to `len` not supported, got INTEGER"))
+	expect(t, "len(1)", errors.New("argument to `len` not supported, got NUMBER"))
 	expect(t, `len("one", "two")`, errors.New("wrong number of arguments: got 2, want 1"))
 	expect(t, "len([1, 2, 3])", 3)
 	expect(t, "len([])", 0)
@@ -259,6 +263,9 @@ func TestArrayIndexExpressions(t *testing.T) {
 	expect(t, "let i = 0; [1, 2][i + 1]", 2)
 	expect(t, "let a = [1, 2, 3]; a[2]", 3)
 	expect(t, "let a = [1, 2, 3]; a[0] * a[1]", 2)
+
+	expect(t, "[1, 2, 3][1.5]", errors.New("invalid index"))
+	expect(t, `[1, 2, 3]["1"]`, errors.New("invalid index type: STRING"))
 }
 
 func TestArraySlices(t *testing.T) {
@@ -285,15 +292,17 @@ func TestArrayConcatenation(t *testing.T) {
 }
 
 func TestHashLiterals(t *testing.T) {
-	expect(t, "{}", map[object.HashKey]int64{})
-	expect(t, "{1: 2, 2: 3}", map[object.HashKey]int64{
-		(&object.Integer{Value: 1}).Hash(): 2,
-		(&object.Integer{Value: 2}).Hash(): 3,
+	expect(t, "{}", map[object.HashKey]int{})
+	expect(t, "{1: 2, 2: 3}", map[object.HashKey]int{
+		(&object.Number{Value: 1}).Hash(): 2,
+		(&object.Number{Value: 2}).Hash(): 3,
 	})
-	expect(t, "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", map[object.HashKey]int64{
-		(&object.Integer{Value: 2}).Hash(): 4,
-		(&object.Integer{Value: 6}).Hash(): 16,
-	})
+	expect(t, "{1 + 1: 2 * 2, 3 + 3: 4 * 4} == {2: 4, 6: 16}", true)
+	expect(t, `
+		let a = 1.0;
+		let b = 2.0;
+		{a: b} == {1: 2}
+	`, true)
 }
 
 func TestHashIndexExpressions(t *testing.T) {
@@ -303,6 +312,7 @@ func TestHashIndexExpressions(t *testing.T) {
 	expect(t, `{5: 10}[5]`, 10)
 	expect(t, `{true: 5}[true]`, 5)
 	expect(t, `{false: 5}[false]`, 5)
+	expect(t, `{1: true}[1.0]`, true)
 }
 
 func TestHashConcatenation(t *testing.T) {

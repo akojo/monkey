@@ -11,16 +11,18 @@ import (
 func ExpectObject(actual object.Object, expected any) error {
 	switch e := expected.(type) {
 	case int:
-		return expectInteger(actual, int64(e))
+		return expectNumber(actual, float64(e))
 	case int64:
-		return expectInteger(actual, e)
+		return expectNumber(actual, float64(e))
+	case float64:
+		return expectNumber(actual, float64(e))
 	case bool:
 		return expectBoolean(actual, e)
 	case string:
 		return expectString(actual, e)
 	case []int:
 		return expectIntegerArray(actual, e)
-	case map[object.HashKey]int64:
+	case map[object.HashKey]int:
 		return expectIntegerHash(actual, e)
 	case error:
 		return expectError(actual, e.Error())
@@ -33,13 +35,13 @@ func ExpectObject(actual object.Object, expected any) error {
 	}
 }
 
-func expectInteger(actual object.Object, expected int64) error {
-	result, ok := actual.(*object.Integer)
+func expectNumber(actual object.Object, expected float64) error {
+	result, ok := actual.(*object.Number)
 	if !ok {
-		return fmt.Errorf("expected Integer, got %T: %s", actual, actual.Inspect())
+		return fmt.Errorf("expected Number, got %T: %s", actual, actual.Inspect())
 	}
 	if result.Value != expected {
-		return fmt.Errorf("integer: expected %d, got %d", expected, result.Value)
+		return fmt.Errorf("number: expected %g, got %g", expected, result.Value)
 	}
 	return nil
 }
@@ -88,7 +90,7 @@ func expectIntegerArray(actual object.Object, expected []int) error {
 	}
 
 	for i, expectedElement := range expected {
-		err := expectInteger(array.Elements[i], int64(expectedElement))
+		err := expectNumber(array.Elements[i], float64(expectedElement))
 		if err != nil {
 			return fmt.Errorf("array[%d]: %w", i, err)
 		}
@@ -96,7 +98,7 @@ func expectIntegerArray(actual object.Object, expected []int) error {
 	return nil
 }
 
-func expectIntegerHash(actual object.Object, expected map[object.HashKey]int64) error {
+func expectIntegerHash(actual object.Object, expected map[object.HashKey]int) error {
 	hash, err := assertType[*object.Hash](actual)
 	if err != nil {
 		return err
@@ -112,7 +114,7 @@ func expectIntegerHash(actual object.Object, expected map[object.HashKey]int64) 
 			return fmt.Errorf("missing key in Pairs")
 		}
 
-		err := expectInteger(pair.Value, expectValue)
+		err := expectNumber(pair.Value, float64(expectValue))
 		if err != nil {
 			return err
 		}

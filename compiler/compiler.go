@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 
@@ -150,12 +151,11 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emit(code.OpFalse)
 		}
-	case *ast.IntegerLiteral:
-		if node.Value < 65536 {
+	case *ast.NumberLiteral:
+		if math.Round(node.Value) == node.Value && node.Value < 65536 {
 			c.emit(code.OpPushImmediate, int(node.Value))
 		} else {
-			integer := &object.Integer{Value: node.Value}
-			c.emit(code.OpConstant, c.addConstant(integer))
+			c.emit(code.OpConstant, c.addConstant(&object.Number{Value: node.Value}))
 		}
 	case *ast.StringLiteral:
 		str := object.NewString(node.Value)

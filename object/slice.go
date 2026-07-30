@@ -5,8 +5,8 @@ import (
 )
 
 type Slice struct {
-	Start int64
-	End   *int64
+	Start int
+	End   *int
 }
 
 func (s *Slice) Type() ObjectType {

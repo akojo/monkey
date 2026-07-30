@@ -65,9 +65,9 @@ var Builtins = []Builtin{
 
 				switch arg := args[0].(type) {
 				case *object.Array:
-					return &object.Integer{Value: int64(len(arg.Elements))}
+					return &object.Number{Value: float64(len(arg.Elements))}
 				case *object.Hash:
-					return &object.Integer{Value: int64(len(arg.Pairs))}
+					return &object.Number{Value: float64(len(arg.Pairs))}
 				case object.String:
 					return arg.Len()
 				}
@@ -102,15 +102,15 @@ var Builtins = []Builtin{
 				if !ok {
 					lib.Error("argument 0: got %s, want ARRAY", args[0].Type())
 				}
-				start, ok := args[1].(*object.Integer)
+				start, ok := args[1].(*object.Number)
 				if !ok {
-					lib.Error("argument 1: got %s, want INTEGER", args[0].Type())
+					lib.Error("argument 1: got %s, want NUMBER", args[0].Type())
 				}
-				end, ok := args[2].(*object.Integer)
+				end, ok := args[2].(*object.Number)
 				if !ok {
-					lib.Error("argument 2: got %s, want INTEGER", args[0].Type())
+					lib.Error("argument 2: got %s, want NUMBER", args[0].Type())
 				}
-				return lib.SliceArray(array, start.Value, end.Value)
+				return lib.SliceArray(array, int(start.Value), int(end.Value))
 			},
 		},
 	},

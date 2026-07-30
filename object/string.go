@@ -24,8 +24,8 @@ func (s String) Equals(other Object) bool {
 	return s == other
 }
 
-func (s String) Len() *Integer {
-	return &Integer{Value: int64(utf8.RuneCountInString(s.value()))}
+func (s String) Len() *Number {
+	return &Number{Value: float64(utf8.RuneCountInString(s.value()))}
 }
 
 func (s String) Add(other String) String {

@@ -107,15 +107,15 @@ func (i *Identifier) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s%s", indent(level), i.Value)
 }
 
-type IntegerLiteral struct {
+type NumberLiteral struct {
 	Token token.Token
-	Value int64
+	Value float64
 }
 
-func (il *IntegerLiteral) expressionNode()      {}
-func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
-func (il *IntegerLiteral) String() string       { return il.Token.Literal }
-func (il *IntegerLiteral) PrettyPrint(level int) string {
+func (il *NumberLiteral) expressionNode()      {}
+func (il *NumberLiteral) TokenLiteral() string { return il.Token.Literal }
+func (il *NumberLiteral) String() string       { return il.Token.Literal }
+func (il *NumberLiteral) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s%s", indent(level), il.Token.Literal)
 }
 

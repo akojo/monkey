@@ -17,7 +17,7 @@ const (
 
 	// Identifiers and literals
 	IDENT  = "IDENT"  // add, x, y, ...
-	INT    = "INT"    // 123456
+	NUMBER = "NUMBER" // 123456, 123_456, 1.23456, 1.234e56
 	STRING = "STRING" // "this is a string"
 
 	// Operators
@@ -66,7 +66,7 @@ var keywords = map[string]TokenType{
 }
 
 func (t Token) String() string {
-	if t.Type == IDENT || t.Type == INT {
+	if t.Type == IDENT || t.Type == NUMBER {
 		return fmt.Sprintf("%s(%s)", t.Type, t.Literal)
 	}
 	return string(t.Type)

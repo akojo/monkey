@@ -12,9 +12,9 @@ func TestBooleanHashKey(t *testing.T) {
 }
 
 func TestIntegerHashKey(t *testing.T) {
-	one1 := &Integer{Value: 1}
-	one2 := &Integer{Value: 1}
-	hundred := &Integer{Value: 100}
+	one1 := &Number{Value: 1}
+	one2 := &Number{Value: 1}
+	hundred := &Number{Value: 100}
 
 	expectHashEquals(t, one1, one2)
 	expectHashNotEquals(t, one1, hundred)

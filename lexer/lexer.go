@@ -40,7 +40,12 @@ func New(input io.Reader, filename string) *Lexer {
 
 	l.scanner.Init(input)
 	l.scanner.Filename = filename
-	l.scanner.Mode = scanner.ScanIdents | scanner.ScanInts | scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
+	l.scanner.Mode = scanner.ScanIdents |
+		scanner.ScanInts |
+		scanner.ScanFloats |
+		scanner.ScanStrings |
+		scanner.ScanComments |
+		scanner.SkipComments
 	l.scanner.IsIdentRune = func(ch rune, i int) bool {
 		return unicode.IsLetter(ch) || ch == '_' || (i > 0 && unicode.IsDigit(ch))
 	}
@@ -75,8 +80,8 @@ func (l *Lexer) NextToken() token.Token {
 		switch ch {
 		case scanner.Ident:
 			tok = token.NewIdent(l.scanner.TokenText())
-		case scanner.Int:
-			tok = token.Token{Type: token.INT, Literal: l.scanner.TokenText()}
+		case scanner.Int, scanner.Float:
+			tok = token.Token{Type: token.NUMBER, Literal: l.scanner.TokenText()}
 		case scanner.String:
 			tok = token.Token{Type: token.STRING, Literal: strings.Trim(l.scanner.TokenText(), `"`)}
 		default:

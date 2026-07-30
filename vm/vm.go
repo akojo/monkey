@@ -78,7 +78,7 @@ func (vm *VM) Run() error {
 			value := code.ReadUint16(ins[ip+1:])
 			vm.frame().ip += 2
 
-			vm.push(&object.Integer{Value: int64(value)})
+			vm.push(&object.Number{Value: float64(value)})
 		case code.OpPop:
 			vm.sp--
 		case code.OpGetGlobal:
@@ -153,20 +153,21 @@ func (vm *VM) Run() error {
 		case code.OpSlice:
 			start, end := vm.stack[vm.sp-2], vm.stack[vm.sp-1]
 
-			if start.Type() != object.INTEGER {
+			if start.Type() != object.NUMBER {
 				return fmt.Errorf("cannot use as slice start: %s", start.Type())
 			}
 
-			var endValue *int64 = nil
-			if end.Type() == object.INTEGER {
-				endValue = &end.(*object.Integer).Value
+			var endValue *int = nil
+			if end.Type() == object.NUMBER {
+				value := int(end.(*object.Number).Value)
+				endValue = &value
 			} else if end.Type() != object.NULL {
 				return fmt.Errorf("cannot use as slice end: %s", end.Type())
 			}
 
 			vm.sp--
 			vm.stack[vm.sp-1] = &object.Slice{
-				Start: start.(*object.Integer).Value,
+				Start: int(start.(*object.Number).Value),
 				End:   endValue,
 			}
 		case code.OpBranch:
@@ -192,11 +193,11 @@ func (vm *VM) Run() error {
 			vm.sp--
 			vm.stack[vm.sp-1] = result
 		case code.OpMinus:
-			if vm.stack[vm.sp-1].Type() != object.INTEGER {
+			if vm.stack[vm.sp-1].Type() != object.NUMBER {
 				return fmt.Errorf("unknown operator: -%s", vm.stack[vm.sp-1].Type())
 			}
-			top := vm.stack[vm.sp-1].(*object.Integer)
-			vm.stack[vm.sp-1] = &object.Integer{Value: -top.Value}
+			top := vm.stack[vm.sp-1].(*object.Number)
+			vm.stack[vm.sp-1] = &object.Number{Value: -top.Value}
 		case code.OpBang:
 			top := vm.stack[vm.sp-1]
 			vm.stack[vm.sp-1] = lib.Boolean(top == lib.FALSE || top == lib.NULL)
@@ -316,20 +317,20 @@ func executeBinaryOp(op code.Opcode, left, right object.Object) object.Object {
 		return lib.Multiply(left, right)
 	case left.Type() != right.Type():
 		return lib.Error("%s: type mismatch: %s %s", fmtOp(op), left.Type(), right.Type())
-	case left.Type() == object.INTEGER && right.Type() == object.INTEGER:
-		leftInt := left.(*object.Integer)
-		rightInt := right.(*object.Integer)
+	case left.Type() == object.NUMBER && right.Type() == object.NUMBER:
+		leftInt := left.(*object.Number)
+		rightInt := right.(*object.Number)
 		return executeIntegerOp(op, leftInt, rightInt)
 	}
 	return lib.Error("unknown op: %s %s %s", left.Type(), fmtOp(op), right.Type())
 }
 
-func executeIntegerOp(op code.Opcode, left, right *object.Integer) object.Object {
+func executeIntegerOp(op code.Opcode, left, right *object.Number) object.Object {
 	switch op {
 	case code.OpSub:
-		return &object.Integer{Value: left.Value - right.Value}
+		return &object.Number{Value: left.Value - right.Value}
 	case code.OpDiv:
-		return &object.Integer{Value: left.Value / right.Value}
+		return &object.Number{Value: left.Value / right.Value}
 	case code.OpLessThan:
 		return lib.Boolean(left.Value < right.Value)
 	}

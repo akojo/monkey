@@ -18,7 +18,7 @@ func TestTokenizeAssignment(t *testing.T) {
 		{token.LET, "let"},
 		{token.IDENT, "five"},
 		{token.ASSIGN, "="},
-		{token.INT, "5"},
+		{token.NUMBER, "5"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
@@ -70,7 +70,7 @@ func TestTokenizeFunctionCall(t *testing.T) {
 func TestTokenizeIllegal(t *testing.T) {
 	input := "5\a"
 	expectTokens := []expectToken{
-		{token.INT, "5"},
+		{token.NUMBER, "5"},
 		{token.ILLEGAL, "\a"},
 		{token.EOF, ""},
 	}
@@ -86,7 +86,7 @@ func TestTokenizeOperators(t *testing.T) {
 		{token.MINUS, "-"},
 		{token.ASTERISK, "*"},
 		{token.SLASH, "/"},
-		{token.INT, "5"},
+		{token.NUMBER, "5"},
 		{token.LT, "<"},
 		{token.GT, ">"},
 		{token.SEMICOLON, ";"},
@@ -103,13 +103,13 @@ func TestTokenizeEquals(t *testing.T) {
 		b != 9;
 	`
 	expectTokens := []expectToken{
-		{token.INT, "10"},
+		{token.NUMBER, "10"},
 		{token.EQ, "=="},
 		{token.IDENT, "a"},
 		{token.SEMICOLON, ";"},
 		{token.IDENT, "b"},
 		{token.NE, "!="},
-		{token.INT, "9"},
+		{token.NUMBER, "9"},
 		{token.SEMICOLON, ";"},
 	}
 
@@ -128,7 +128,7 @@ func TestTokenizeKeywords(t *testing.T) {
 		{token.LPAREN, "("},
 		{token.IDENT, "a"},
 		{token.LT, "<"},
-		{token.INT, "10"},
+		{token.NUMBER, "10"},
 		{token.RPAREN, ")"},
 		{token.LBRACE, "{"},
 		{token.RETURN, "return"},
@@ -153,11 +153,11 @@ func TestSkipComments(t *testing.T) {
 	expectTokens := []expectToken{
 		{token.IDENT, "a"},
 		{token.ASSIGN, "="},
-		{token.INT, "1"},
+		{token.NUMBER, "1"},
 		{token.SEMICOLON, ";"},
 		{token.IDENT, "b"},
 		{token.ASSIGN, "="},
-		{token.INT, "2"},
+		{token.NUMBER, "2"},
 		{token.SEMICOLON, ";"},
 	}
 
@@ -171,6 +171,20 @@ func TestUnicodeIdentifiers(t *testing.T) {
 		{token.SEMICOLON, ";"},
 		{token.IDENT, "í"},
 		{token.SEMICOLON, ";"},
+	}
+
+	testLexer(t, input, expectTokens)
+}
+
+func TestNumbers(t *testing.T) {
+	input := `5 + 1.5 + 1e5`
+
+	expectTokens := []expectToken{
+		{token.NUMBER, "5"},
+		{token.PLUS, "+"},
+		{token.NUMBER, "1.5"},
+		{token.PLUS, "+"},
+		{token.NUMBER, "1e5"},
 	}
 
 	testLexer(t, input, expectTokens)
@@ -194,9 +208,9 @@ func TestArray(t *testing.T) {
 
 	expectTokens := []expectToken{
 		{token.LBRACKET, "["},
-		{token.INT, "1"},
+		{token.NUMBER, "1"},
 		{token.COMMA, ","},
-		{token.INT, "2"},
+		{token.NUMBER, "2"},
 		{token.RBRACKET, "]"},
 	}
 
@@ -210,11 +224,11 @@ func TestHash(t *testing.T) {
 		{token.LBRACE, "{"},
 		{token.STRING, "foo"},
 		{token.COLON, ":"},
-		{token.INT, "1"},
+		{token.NUMBER, "1"},
 		{token.COMMA, ","},
 		{token.STRING, "bar"},
 		{token.COLON, ":"},
-		{token.INT, "2"},
+		{token.NUMBER, "2"},
 		{token.RBRACE, "}"},
 	}
 

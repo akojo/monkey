@@ -85,7 +85,7 @@ func TestIntegerLiteralExpression(t *testing.T) {
 
 	stmt := expectExpressionStatement(t, program.Statements[0])
 
-	expectIntegerLiteral(t, stmt.Expression, 5)
+	expectNumberLiteral(t, stmt.Expression, 5)
 }
 
 func TestBooleanExpression(t *testing.T) {
@@ -341,7 +341,7 @@ func TestArrayLiteral(t *testing.T) {
 		t.Fatalf("array.Elements: expected 3, got %d", len(array.Elements))
 	}
 
-	expectIntegerLiteral(t, array.Elements[0], 1)
+	expectNumberLiteral(t, array.Elements[0], 1)
 	expectInfixExpression(t, array.Elements[1], 2, "*", 2)
 	expectInfixExpression(t, array.Elements[2], 3, "+", 3)
 }
@@ -378,7 +378,7 @@ func TestIndexExpressions(t *testing.T) {
 }
 
 func TestSliceExpressions(t *testing.T) {
-	test := func(input string, start *int64, end *int64) {
+	test := func(input string, start, end *int) {
 		program := makeProgram(t, input)
 
 		expectStatementCount(t, program.Statements, 1)
@@ -395,20 +395,20 @@ func TestSliceExpressions(t *testing.T) {
 		}
 
 		if start != nil {
-			expectIntegerLiteral(t, slice.Start, *start)
+			expectNumberLiteral(t, slice.Start, float64(*start))
 		} else if slice.Start != nil {
 			t.Errorf("slice.Start: expect nil, got %+v", slice.Start)
 		}
 
 		if end != nil {
-			expectIntegerLiteral(t, slice.End, *end)
+			expectNumberLiteral(t, slice.End, float64(*end))
 		} else if slice.End != nil {
 			t.Errorf("slice.End: expect nil, got %+v", slice.End)
 		}
 	}
 
-	start := int64(1)
-	end := int64(2)
+	start := 1
+	end := 2
 
 	test("myarray[1:2]", &start, &end)
 	test("[1, 2][1:2]", &start, &end)
@@ -431,7 +431,7 @@ func TestHashLiteral(t *testing.T) {
 		t.Errorf("hash.Pairs: expected 2, got %d", len(hash.Pairs))
 	}
 
-	expected := map[string]int64{
+	expected := map[string]float64{
 		"one": 1,
 		"two": 2,
 	}
@@ -443,7 +443,7 @@ func TestHashLiteral(t *testing.T) {
 		}
 
 		expectValue := expected[literal.String()]
-		expectIntegerLiteral(t, value, expectValue)
+		expectNumberLiteral(t, value, expectValue)
 	}
 }
 
@@ -499,7 +499,7 @@ func TestHashLiteralWithSlice(t *testing.T) {
 			t.Errorf("key.Index: expected *ast.SliceExpression, got %T", key)
 		}
 
-		expectIntegerLiteral(t, value, 1)
+		expectNumberLiteral(t, value, 1)
 	}
 }
 
@@ -553,9 +553,11 @@ func expectStatementCount(t *testing.T, stmts []ast.Statement, count int) {
 func expectLiteralExpression(t *testing.T, exp ast.Expression, expected any) {
 	switch v := expected.(type) {
 	case int:
-		expectIntegerLiteral(t, exp, int64(v))
+		expectNumberLiteral(t, exp, float64(v))
 	case int64:
-		expectIntegerLiteral(t, exp, v)
+		expectNumberLiteral(t, exp, float64(v))
+	case float64:
+		expectNumberLiteral(t, exp, float64(v))
 	case string:
 		expectIdentifier(t, exp, v)
 	case bool:
@@ -578,17 +580,17 @@ func expectIdentifier(t *testing.T, exp ast.Expression, value string) {
 	}
 }
 
-func expectIntegerLiteral(t *testing.T, exp ast.Expression, value int64) {
-	intLiteral, ok := exp.(*ast.IntegerLiteral)
+func expectNumberLiteral(t *testing.T, exp ast.Expression, value float64) {
+	numberLiteral, ok := exp.(*ast.NumberLiteral)
 	if !ok {
 		t.Fatalf("int: expected *ast.IntegerLiteral, got %T", exp)
 	}
-	if intLiteral.Value != value {
-		t.Errorf("int.Value: expected %d, got %d", value, intLiteral.Value)
+	if numberLiteral.Value != value {
+		t.Errorf("int.Value: expected %g, got %g", value, numberLiteral.Value)
 	}
-	tokenLiteral := strconv.FormatInt(value, 10)
-	if intLiteral.TokenLiteral() != tokenLiteral {
-		t.Errorf("int.TokenLiteral: expected %q, got %q", tokenLiteral, intLiteral.TokenLiteral())
+	tokenLiteral := strconv.FormatFloat(value, 'g', -1, 64)
+	if numberLiteral.TokenLiteral() != tokenLiteral {
+		t.Errorf("int.TokenLiteral: expected %q, got %q", tokenLiteral, numberLiteral.TokenLiteral())
 	}
 }
 
