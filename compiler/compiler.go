@@ -102,6 +102,31 @@ func (c *Compiler) Compile(node ast.Node) error {
 		} else {
 			c.emit(code.OpSetLocal, symbol.Index)
 		}
+	case *ast.AssignExpression:
+		ident, ok := node.Target.(*ast.Identifier)
+		if !ok {
+			return fmt.Errorf("invalid rvalue: %s", node.Target)
+		}
+
+		symbol, found := c.symbolTable.Resolve(ident.Value)
+		if !found {
+			return fmt.Errorf("undefined variable '%s'", ident.Value)
+		}
+
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+
+		// Assignment is an expresssion so it should retain the assigned value
+		// on the stack
+		c.emit(code.OpDup)
+
+		if symbol.Scope == GlobalScope {
+			c.emit(code.OpSetGlobal, symbol.Index)
+		} else {
+			c.emit(code.OpSetLocal, symbol.Index)
+		}
 	case *ast.InfixExpression:
 		var err error
 		if node.Operator == ">" {

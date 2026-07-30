@@ -14,6 +14,7 @@ const (
 	OpConstant Opcode = iota
 	OpPushImmediate
 	OpPop
+	OpDup
 
 	OpGetGlobal
 	OpSetGlobal
@@ -68,6 +69,7 @@ var definitions = map[Opcode]*Definition{
 	// (and it saves a slot in the constants store).
 	OpPushImmediate: {"PUSHI", []int{2}},
 	OpPop:           {"POP", []int{}},
+	OpDup:           {"DUP", []int{}}, // Duplicate top of stack
 
 	OpGetGlobal: {"GETGLOBAL", []int{2}},
 	OpSetGlobal: {"SETGLOBAL", []int{2}},

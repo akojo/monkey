@@ -187,6 +187,23 @@ func TestGlobalLetStatements(t *testing.T) {
 	expect(t, "let a = 5; let b = 5; let c = a + b + 5; c;", 15)
 }
 
+func TestAssignment(t *testing.T) {
+	expect(t, `
+		let num = 1;
+		num = 2;
+		num == 2;
+	`, true)
+
+	expect(t, `
+		let f = fn() {
+			let num = 1;
+			num = 2;
+			return num;
+		}
+		f() == 2;
+	`, true)
+}
+
 func TestFunctionCall(t *testing.T) {
 	expect(t, "let f = fn() { 5 + 10; }; f();", 15)
 	expect(t, "let one = fn() { 1 }; let two = fn() { 2 }; one() + two();", 3)

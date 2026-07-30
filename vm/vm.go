@@ -81,6 +81,8 @@ func (vm *VM) Run() error {
 			vm.push(&object.Number{Value: float64(value)})
 		case code.OpPop:
 			vm.sp--
+		case code.OpDup:
+			vm.push(vm.stack[vm.sp-1])
 		case code.OpGetGlobal:
 			index := code.ReadUint16(ins[ip+1:])
 			vm.frame().ip += 2

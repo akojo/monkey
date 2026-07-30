@@ -220,6 +220,23 @@ func TestLetStatementScopes(t *testing.T) {
 		CLOSURE(0, 0), POP)
 }
 
+func TestAssignment(t *testing.T) {
+	expect(t, `
+		let num = 55;
+		num = 66;
+		`,
+		[]constant{},
+		PUSHI(55), SETG(0), PUSHI(66), DUP, SETG(0), POP)
+
+	expect(t, `
+		fn() {
+			let num = 55;
+			num = 66;
+		}`,
+		[]constant{function(PUSHI(55), SET(0), PUSHI(66), DUP, SET(0), RET)},
+		CLOSURE(0, 0), POP)
+}
+
 func TestBuiltins(t *testing.T) {
 	expect(t, "len([]); append([], 1);",
 		[]constant{},
@@ -372,6 +389,7 @@ func PUSHI(value int) code.Instructions {
 }
 
 var POP = code.Make(code.OpPop)
+var DUP = code.Make(code.OpDup)
 
 func GETG(index int) code.Instructions {
 	return code.Make(code.OpGetGlobal, index)
