@@ -158,6 +158,19 @@ func (ie *InfixExpression) PrettyPrint(level int) string {
 	return fmt.Sprintf("%s(%s %s %s)", indent(level), ie.Left, ie.Operator, ie.Right)
 }
 
+type AssignExpression struct {
+	Token  token.Token
+	Target Expression
+	Value  Expression
+}
+
+func (ae *AssignExpression) expressionNode()      {}
+func (ae *AssignExpression) TokenLiteral() string { return ae.Token.Literal }
+func (ae *AssignExpression) String() string       { return ae.PrettyPrint(0) }
+func (ae *AssignExpression) PrettyPrint(level int) string {
+	return fmt.Sprintf("%s%s = %s", indent(level), ae.Target, ae.Value)
+}
+
 type IFExpression struct {
 	Token       token.Token
 	Condition   Expression

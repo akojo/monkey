@@ -28,6 +28,7 @@ type Parser struct {
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN      // a = 1
 	COLON       // array[start:end], "foo": 1
 	EQUALS      // ==, !=
 	LESSGREATER // <, >
@@ -39,6 +40,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.ASSIGN:   ASSIGN,
 	token.COLON:    COLON,
 	token.EQ:       EQUALS,
 	token.NE:       EQUALS,
@@ -71,6 +73,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LBRACE, p.parseHashLiteral)
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.ASSIGN, p.parseAssignExpression)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
 	p.registerInfix(token.NE, p.parseInfixExpression)
 	p.registerInfix(token.LT, p.parseInfixExpression)
@@ -405,6 +408,25 @@ func (p *Parser) parseArrayLiteral() (ast.Expression, error) {
 	}
 
 	return array, nil
+}
+
+func (p *Parser) parseAssignExpression(target ast.Expression) (ast.Expression, error) {
+	var err error
+
+	expression := &ast.AssignExpression{
+		Token:  p.curToken,
+		Target: target,
+	}
+
+	p.nextToken()
+
+	expression.Value, err = p.parseExpression(LOWEST)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return expression, nil
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) (ast.Expression, error) {

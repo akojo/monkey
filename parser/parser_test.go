@@ -39,6 +39,36 @@ func TestLetStatements(t *testing.T) {
 	test("let foobar = y;", "foobar", "y")
 }
 
+func TestSimpleAssignmentStatement(t *testing.T) {
+	test := func(input string, ident string, value any) {
+		t.Run(input, func(t *testing.T) {
+			program := makeProgram(t, input)
+
+			expectStatementCount(t, program.Statements, 1)
+
+			stmt := expectExpressionStatement(t, program.Statements[0])
+
+			assignExp, ok := stmt.Expression.(*ast.AssignExpression)
+			if !ok {
+				t.Errorf("s: expected *ast.AssignExpression, got %T", stmt)
+				return
+			}
+
+			if assignExp.TokenLiteral() != "=" {
+				t.Errorf("s.TokenLiteral: expected \"=\", got %q", stmt.TokenLiteral())
+				return
+			}
+
+			expectLiteralExpression(t, assignExp.Target, ident)
+			expectLiteralExpression(t, assignExp.Value, value)
+		})
+	}
+
+	test("x = 5;", "x", 5)
+	test("y = true;", "y", true)
+	test("foobar = y;", "foobar", "y")
+}
+
 func TestReturnStatements(t *testing.T) {
 	test := func(input string, value any) {
 		t.Run(input, func(t *testing.T) {
