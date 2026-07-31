@@ -101,20 +101,17 @@ func SetIndex(obj object.Object, index object.Object, value object.Object) error
 }
 
 func SliceArray(array *object.Array, start int, end int) object.Object {
-	if start < 0 {
-		start = 0
+	if start < 0 || end < 0 {
+		return Error("negative indexing not supported")
 	}
 	if start > len(array.Elements) {
-		start = len(array.Elements)
-	}
-	if end < 0 {
-		end = 0
+		return Error("slice start beyond end of array")
 	}
 	if end > len(array.Elements) {
-		end = len(array.Elements)
+		return Error("slice end beyond end of array")
 	}
-	if !(start < end) {
-		return &object.Array{Elements: make([]object.Object, 0)}
+	if end < start {
+		return Error("slice end before start")
 	}
 
 	newSlice := &object.Array{Elements: make([]object.Object, end-start)}
