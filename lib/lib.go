@@ -80,34 +80,24 @@ func Index(obj object.Object, index object.Object) object.Object {
 	case obj.Type() == object.HASH:
 		return hashIndex(obj, index)
 	}
-	return Error("index operator not supported: %s", obj.Type())
+	return Error("index operator not supported: %s[%s]", obj.Type(), index.Type())
 }
 
-func sliceIndex(array *object.Array, sliceObj *object.Slice) object.Object {
-	var end int
-	if sliceObj.End == nil {
-		end = len(array.Elements)
-	} else {
-		end = *sliceObj.End
+func SetIndex(obj object.Object, index object.Object, value object.Object) error {
+	switch obj := obj.(type) {
+	case *object.Array:
+		return arraySet(obj, index, value)
+	case *object.Hash:
+		key, ok := index.(object.Hashable)
+		if !ok {
+			return fmt.Errorf("cannot use as hash key: %s", index.Type())
+		}
+
+		obj.Pairs[key.Hash()] = object.HashPair{Key: index, Value: value}
+		return nil
+	default:
+		return fmt.Errorf("index operator not supported: %s[%s]", obj.Type(), index.Type())
 	}
-
-	return SliceArray(array, sliceObj.Start, end)
-}
-
-func hashIndex(hash, index object.Object) object.Object {
-	hashObject := hash.(*object.Hash)
-
-	key, ok := index.(object.Hashable)
-	if !ok {
-		return Error("cannot use as hash key: %s", index.Type())
-	}
-
-	pair, ok := hashObject.Pairs[key.Hash()]
-	if !ok {
-		return NULL
-	}
-
-	return pair.Value
 }
 
 func SliceArray(array *object.Array, start int, end int) object.Object {
@@ -156,4 +146,83 @@ func Realloc[T any](s []T, size int) []T {
 	r := make([]T, size)
 	copy(r, s)
 	return r
+}
+
+func sliceIndex(array *object.Array, sliceObj *object.Slice) object.Object {
+	var end int
+	if sliceObj.End == nil {
+		end = len(array.Elements)
+	} else {
+		end = *sliceObj.End
+	}
+
+	return SliceArray(array, sliceObj.Start, end)
+}
+
+func hashIndex(hash, index object.Object) object.Object {
+	hashObject := hash.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return Error("cannot use as hash key: %s", index.Type())
+	}
+
+	pair, ok := hashObject.Pairs[key.Hash()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
+}
+
+func arraySet(array *object.Array, index object.Object, value object.Object) error {
+	switch index := index.(type) {
+	case *object.Number:
+		return arraySetIndex(array, index, value)
+	case *object.Slice:
+		return arraySetSlice(array, index, value)
+	default:
+		return fmt.Errorf("index operator not supported: ARRAY[%s]", index.Type())
+	}
+}
+
+func arraySetIndex(target *object.Array, index *object.Number, value object.Object) error {
+	f := index.Value
+	if math.Round(f) != f {
+		return fmt.Errorf("invalid index")
+	}
+
+	i := int(f)
+	if i < 0 || i > (len(target.Elements)-1) {
+		return fmt.Errorf("index out of range")
+	}
+
+	target.Elements[i] = value
+	return nil
+}
+
+func arraySetSlice(target *object.Array, index *object.Slice, value object.Object) error {
+	array, ok := value.(*object.Array)
+	if !ok {
+		return fmt.Errorf("invalid value %s, must be ARRAY", value.Type())
+	}
+
+	start := index.Start
+	var end int
+	if index.End != nil {
+		end = *index.End
+	} else {
+		end = start + len(array.Elements)
+	}
+
+	if len(array.Elements) != (end - start) {
+		return fmt.Errorf("invalid value length %d, must be %d", len(array.Elements), end-start)
+	}
+
+	if end > len(target.Elements)-1 {
+		target.Elements = slices.Concat(target.Elements[:start], array.Elements)
+	} else {
+		copy(target.Elements[start:end], array.Elements)
+	}
+	return nil
 }

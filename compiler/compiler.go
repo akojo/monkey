@@ -103,29 +103,9 @@ func (c *Compiler) Compile(node ast.Node) error {
 			c.emit(code.OpSetLocal, symbol.Index)
 		}
 	case *ast.AssignExpression:
-		ident, ok := node.Target.(*ast.Identifier)
-		if !ok {
-			return fmt.Errorf("invalid rvalue: %s", node.Target)
-		}
-
-		symbol, found := c.symbolTable.Resolve(ident.Value)
-		if !found {
-			return fmt.Errorf("undefined variable '%s'", ident.Value)
-		}
-
-		err := c.Compile(node.Value)
+		err := c.compileAssignment(node)
 		if err != nil {
 			return err
-		}
-
-		// Assignment is an expresssion so it should retain the assigned value
-		// on the stack
-		c.emit(code.OpDup)
-
-		if symbol.Scope == GlobalScope {
-			c.emit(code.OpSetGlobal, symbol.Index)
-		} else {
-			c.emit(code.OpSetLocal, symbol.Index)
 		}
 	case *ast.InfixExpression:
 		var err error
@@ -335,6 +315,42 @@ func (c *Compiler) Compile(node ast.Node) error {
 		c.emit(code.OpCall, len(node.Arguments))
 	default:
 		return fmt.Errorf("unknown expression: %T (%s)", node, node.String())
+	}
+	return nil
+}
+
+func (c *Compiler) compileAssignment(node *ast.AssignExpression) error {
+	err := c.Compile(node.Value)
+	if err != nil {
+		return err
+	}
+
+	switch target := node.Target.(type) {
+	case *ast.Identifier:
+		symbol, found := c.symbolTable.Resolve(target.Value)
+		if !found {
+			return fmt.Errorf("undefined variable '%s'", target.Value)
+		}
+
+		// Assignment is an expresssion so it should retain the assigned value
+		// on the stack
+		c.emit(code.OpDup)
+
+		if symbol.Scope == GlobalScope {
+			c.emit(code.OpSetGlobal, symbol.Index)
+		} else {
+			c.emit(code.OpSetLocal, symbol.Index)
+		}
+	case *ast.IndexExpression:
+		if err := c.Compile(target.Left); err != nil {
+			return err
+		}
+		if err := c.Compile(target.Index); err != nil {
+			return err
+		}
+		c.emit(code.OpSetIndex)
+	default:
+		return fmt.Errorf("invalid rvalue: %s", target)
 	}
 	return nil
 }

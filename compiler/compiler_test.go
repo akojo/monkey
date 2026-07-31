@@ -235,6 +235,13 @@ func TestAssignment(t *testing.T) {
 		}`,
 		[]constant{function(PUSHI(55), SET(0), PUSHI(66), DUP, SET(0), RET)},
 		CLOSURE(0, 0), POP)
+
+	expect(t, `
+		let a = [1];
+		a[0] = 2;
+		`,
+		[]constant{},
+		PUSHI(1), ARRAY(1), SETG(0), PUSHI(2), GETG(0), PUSHI(0), SETINDEX, POP)
 }
 
 func TestBuiltins(t *testing.T) {
@@ -422,6 +429,7 @@ func HASH(size int) code.Instructions {
 
 var INDEX = code.Make(code.OpIndex)
 var SLICE = code.Make(code.OpSlice)
+var SETINDEX = code.Make(code.OpSetIndex)
 
 var EQ = code.Make(code.OpEqual)
 var NEQ = code.Make(code.OpNotEqual)

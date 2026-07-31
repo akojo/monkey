@@ -172,6 +172,15 @@ func (vm *VM) Run() error {
 				Start: int(start.(*object.Number).Value),
 				End:   endValue,
 			}
+		case code.OpSetIndex:
+			value, obj, index := vm.stack[vm.sp-3], vm.stack[vm.sp-2], vm.stack[vm.sp-1]
+
+			err := lib.SetIndex(obj, index, value)
+			if err != nil {
+				return err
+			}
+
+			vm.sp -= 2
 		case code.OpBranch:
 			offset := int(code.ReadUint16(ins[ip+1:]))
 			vm.frame().ip += offset

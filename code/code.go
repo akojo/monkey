@@ -30,6 +30,7 @@ const (
 	OpHash
 	OpIndex
 	OpSlice
+	OpSetIndex
 
 	OpEqual
 	OpNotEqual
@@ -81,10 +82,11 @@ var definitions = map[Opcode]*Definition{
 	OpFalse: {"FALSE", []int{}},
 	OpTrue:  {"TRUE", []int{}},
 
-	OpArray: {"ARRAY", []int{2}},
-	OpHash:  {"HASH", []int{2}},
-	OpIndex: {"INDEX", []int{}},
-	OpSlice: {"SLICE", []int{}},
+	OpArray:    {"ARRAY", []int{2}},
+	OpHash:     {"HASH", []int{2}},
+	OpIndex:    {"INDEX", []int{}},
+	OpSlice:    {"SLICE", []int{}},
+	OpSetIndex: {"SETINDEX", []int{}},
 
 	OpEqual:    {"EQ", []int{}},
 	OpNotEqual: {"NEQ", []int{}},

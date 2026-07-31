@@ -202,6 +202,54 @@ func TestAssignment(t *testing.T) {
 		}
 		f() == 2;
 	`, true)
+
+	expect(t, `
+		let a = [1];
+		a[0] = 2;
+		a[0] == 2;
+	`, true)
+
+	expect(t, `
+		let a = [1, 2, 3, 4]
+		a[0:2] = [100, 200]
+		a == [100, 200, 3, 4]
+	`, true)
+
+	expect(t, `
+		let a = [1, 2]
+		a[:] = [100, 200]
+		a == [100, 200]
+	`, true)
+
+	expect(t, `
+		let a = [1, 2, 3, 4]
+		a[1:] = [200, 300]
+		a == [1, 200, 300, 4]
+	`, true)
+
+	expect(t, `
+		let a = [1, 2]
+		a[1:] = [200, 300, 400]
+		a == [1, 200, 300, 400]
+	`, true)
+
+	expect(t, `
+		let a = [1, 2]
+		a[len(a):] = [3, 4]
+		a == [1, 2, 3, 4]
+	`, true)
+
+	expect(t, `
+		let h = {}
+		h["key"] = "value"
+		h["key"] == "value"
+	`, true)
+
+	expect(t, `
+		let h = {"key": "value"}
+		h["key"] = "new value"
+		h["key"] == "new value"
+	`, true)
 }
 
 func TestFunctionCall(t *testing.T) {
